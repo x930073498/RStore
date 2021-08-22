@@ -1,44 +1,35 @@
 package com.x930073498.rstore
 
+import android.annotation.SuppressLint
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.os.Parcelable
-import android.widget.Toast
 import androidx.lifecycle.ViewModelProvider
 import com.x930073498.rstore.databinding.ActivityMainBinding
-import java.io.Serializable
 
 class MainActivity : AppCompatActivity(), StoreComponent {
-    val viewModel by lazy {
+    private val viewModel by lazy {
         ViewModelProvider(this).get(MainViewModel::class.java)
     }
 
-
+    @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        setState(binding)
+    }
 
-        viewModel.withAnchorStateChanged {
+    private fun setState(binding:  ActivityMainBinding) {
+        viewModel.withAnchor {
             with(it) {
                 onInitialized {
                     binding.root.setOnClickListener {
-                       viewModel.data="${viewModel.count++}"
+                        data = "${++count}"
                     }
                 }
                 stareAt(::data) {
-                    println("enter this line data=$this")
                     binding.data.text = "data=$data"
-
                 }
-                stareAt(::count){
-                    binding.count.text="count=$this"
-                    println("enter this line count=$this")
-                }
-//                stareAt(::data,::count){
-//
-//
-//                }
             }
         }
     }

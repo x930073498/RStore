@@ -16,7 +16,7 @@ interface StoreComponent : LifecycleOwner {
         registerPropertyChangedListener(property, lifecycleOwner, action)
     }
 
-    fun <T : IStoreProvider> T.withAnchorStateChanged(
+    fun <T : IStoreProvider> T.withAnchor(
         lifecycleOwner: LifecycleOwner = defaultLifecycleOwner,
         action: T.(AnchorScope<T>) -> Unit
     ) {
