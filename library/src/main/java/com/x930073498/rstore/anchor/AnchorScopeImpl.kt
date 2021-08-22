@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
+import kotlinx.coroutines.withContext
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.reflect.KProperty
 import kotlin.reflect.KProperty0
@@ -26,7 +27,7 @@ internal class PropertyAction<T : IStoreProvider, V>(
     private val equals: Equals<V>,
     private val action: V.() -> Unit,
 ) {
-    fun run(
+    suspend fun run(
         provider: T,
         changeProperty: List<KProperty<*>>,
         isForce: Boolean,
@@ -39,19 +40,27 @@ internal class PropertyAction<T : IStoreProvider, V>(
 
     }
 
-    private fun run(provider: T, changeProperty: List<KProperty<*>>) {
-        val changedProperty = changeProperty.firstOrNull { it.name == property.name }
+    private suspend fun run(provider: T, changeProperty: List<KProperty<*>>) {
+        val changedProperty = changeProperty.firstOrNull {
+            println("enter this line 4 ${it.name}")
+            it == property || it.name == property.name
+        }
         if (changedProperty != null) {
             run(provider, map[property])
+            println("enter this line 8 ${property.name}")
+        } else {
+            println("enter this line 9 ${property.name}")
         }
     }
 
-    private fun run(provider: T, pre: Any?) {
+    private suspend fun run(provider: T, pre: Any?) {
         when (property) {
             is KProperty0<V> -> {
                 val v = property.invoke()
                 if (!equals.equals(v, pre as? V)) {
-                    action(v)
+                    withContext(provider.main) {
+                        action(v)
+                    }
                     map[property] = v
                 }
             }
@@ -59,7 +68,9 @@ internal class PropertyAction<T : IStoreProvider, V>(
                 property as KProperty1<T, V>
                 val v = property.invoke(provider)
                 if (!equals.equals(v, pre as? V)) {
-                    action(v)
+                    withContext(provider.main) {
+                        action(v)
+                    }
                     map[property] = v
                 }
             }
@@ -120,13 +131,9 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
                         pushProperty(it)
                     }
                 }.start()
-                async(main) {
+                async(io) {
                     for (value in changedChannel) {
                         runAction()
-                        while (changedProperties.isNotEmpty()) {
-                            runAction()
-                        }
-
                     }
                 }.start()
             }
@@ -137,10 +144,14 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
     private suspend fun AnchorScopeImpl<T>.runAction() {
         with(storeProvider) {
             awaitNotPause()
-            action(this@AnchorScopeImpl)
+            withContext(main) {
+                action(this@AnchorScopeImpl)
+            }
             val properties = getChangedPropertiesSnap()
             if (!isInitialized) {
-                initAction()
+                withContext(main) {
+                    initAction()
+                }
                 initAction = {}
             }
             actions.forEach {
@@ -158,6 +169,7 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
     }
 
     override fun <V> stareAt(property: KProperty<V>, equals: Equals<V>, action: V.() -> Unit) {
+        println("enter this line property=${property.name}")
         actions.add(
             PropertyAction(
                 property,
