@@ -15,6 +15,7 @@ internal class StandardNotifier<T : IStoreProvider, Data, Source> : ChangeNotifi
         data: Data?,
         source: Source?
     ) {
+
         notifyPropertyChanged(property)
         with(process) {
             with(checker) {

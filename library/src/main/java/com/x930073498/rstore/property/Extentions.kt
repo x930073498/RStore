@@ -10,9 +10,8 @@ import com.x930073498.rstore.core.IStoreProvider
 import com.x930073498.rstore.core.fromStore
 import com.x930073498.rstore.core.getInstance
 import com.x930073498.rstore.core.getOrCreate
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.*
 import kotlin.reflect.KProperty
@@ -20,8 +19,8 @@ import kotlin.reflect.KProperty0
 import kotlin.reflect.KProperty1
 
 
-private const val anchorPropertiesKey = "930d32dc-f133-4303-ac09-e1b062962345"
-private const val anchorPropertyEventsKey = "1306d9dd-5824-4341-af54-d45265fc2a1e"
+private const val anchorPropertyEventChannelKey = "1306d9dd-5824-4341-af54-d45265fc2a1e"
+private const val anchorPropertyEventsFlowKey = "4dd1aea6-5f82-43be-bddd-d538b5961a38"
 private const val anchorStoreComponentKey = "87e64dd9-6d9b-415f-b10b-5bd04d04dbb3"
 
 internal data class PropertyEvent(
@@ -49,6 +48,7 @@ internal fun <T : IStoreProvider, V> T.registerPropertyChangedListenerImpl(
             MutableStateFlow(property.asEvent())
         }
     }
+
     fun doAction() {
         if (property is KProperty0<V>) {
             action(property.invoke())
@@ -82,8 +82,8 @@ internal fun <T : IStoreProvider, V> T.registerPropertyChangedListenerImpl(
 
 internal fun IStoreProvider.notifyAnchorPropertyChanged(property: KProperty<*>) {
     fromStore {
-        val flow = getInstance<MutableSharedFlow<PropertyEvent>>(anchorPropertyEventsKey)
-        flow?.tryEmit(property.asEvent())
+        val flow = getInstance<Channel<PropertyEvent>>(anchorPropertyEventChannelKey)
+        flow?.trySend(property.asEvent())
     }
 
 }
@@ -100,11 +100,16 @@ internal fun <T : IStoreProvider> T.registerAnchorPropertyChangedListenerImpl(
             MapStore()
         }
     }
-    val anchorPropertyEventFlow = fromStore {
-        getOrCreate(anchorPropertyEventsKey) {
-            MutableSharedFlow<PropertyEvent>(1)
+    val anchorPropertyEventChannel = fromStore {
+        getOrCreate(anchorPropertyEventChannelKey) {
+            Channel<PropertyEvent>(Channel.UNLIMITED)
         }
     }
+    val anchorPropertyEventFlow = fromStore {
+        getOrCreate(anchorPropertyEventsFlowKey) {
+            anchorPropertyEventChannel.receiveAsFlow()
+        }
+    }.shareIn(coroutineScope, SharingStarted.Lazily)
     val id = UUID.randomUUID().toString()
     val scope =
         AnchorScopeImpl(this, anchorPropertyEventFlow, action)

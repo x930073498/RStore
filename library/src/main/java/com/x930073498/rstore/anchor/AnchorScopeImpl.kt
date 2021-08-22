@@ -117,28 +117,37 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
                 async(io) {
                     changedChannel.trySend(count++)
                     flow.collect {
-                        println("enter this line property=$it")
                         pushProperty(it)
                     }
                 }.start()
                 async(main) {
                     for (value in changedChannel) {
-                        awaitNotPause()
-                        action(this@AnchorScopeImpl)
-                        val properties = getChangedPropertiesSnap()
-                        if (!isInitialized) {
-                            initAction()
-                            initAction = {}
+                        runAction()
+                        while (changedProperties.isNotEmpty()) {
+                            runAction()
                         }
-                        actions.forEach {
-                            it.run(storeProvider, properties, !isInitialized)
-                        }
-                        actions.clear()
-                        isInitialized = true
+
                     }
                 }.start()
             }
 
+        }
+    }
+
+    private suspend fun AnchorScopeImpl<T>.runAction() {
+        with(storeProvider) {
+            awaitNotPause()
+            action(this@AnchorScopeImpl)
+            val properties = getChangedPropertiesSnap()
+            if (!isInitialized) {
+                initAction()
+                initAction = {}
+            }
+            actions.forEach {
+                it.run(storeProvider, properties, !isInitialized)
+            }
+            actions.clear()
+            isInitialized = true
         }
     }
 

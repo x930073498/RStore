@@ -7,8 +7,8 @@ import com.x930073498.rstore.core.launchOnIO
 class MainViewModel(application: Application, handle: SavedStateHandle) :
     SaveStateStoreViewModel(application, handle) {
 
-    private var count = 0
-    var data by property("",isAnchorProperty = true)
+     var count by property(0,isAnchorProperty = true)
+    var data by property("$count",isAnchorProperty = true)
 
 
     fun changeProperty() {

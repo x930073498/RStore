@@ -12,5 +12,6 @@ interface AnchorScope<T : IStoreProvider> {
         equals: Equals<V> = DefaultEquals(),
         action: V.() -> Unit
     )
-
 }
+
+

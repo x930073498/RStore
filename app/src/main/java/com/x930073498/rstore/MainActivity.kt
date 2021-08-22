@@ -22,14 +22,19 @@ class MainActivity : AppCompatActivity(), StoreComponent {
         viewModel.withAnchorStateChanged {
             with(it) {
                 onInitialized {
-                    viewModel.changeProperty()
                     binding.root.setOnClickListener {
-                        viewModel.changeProperty()
+                       viewModel.data="${viewModel.count++}"
                     }
                 }
                 stareAt(::data) {
                     println("enter this line data=$this")
-                    binding.tv.text = this
+                    binding.data.text = "data=$this"
+                }
+                stareAt(::count){
+                    binding.count.text="count=$this"
+                }
+                stareAt(::data,::count){
+
                 }
             }
         }
