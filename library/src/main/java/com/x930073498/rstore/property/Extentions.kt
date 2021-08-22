@@ -30,6 +30,19 @@ internal data class PropertyEvent(
 
 private fun KProperty<*>.asEvent() = PropertyEvent(this)
 
+internal fun <T : IStoreProvider, V> T.propertyValue(kProperty: KProperty<V>): V? {
+    with(kProperty) {
+        if (this is KProperty0) return invoke()
+        if (this is KProperty1<*, V>) {
+            return runCatching {
+                this as KProperty1<T, V>
+                invoke(this@propertyValue)
+            }.getOrNull()
+        }
+        return null
+    }
+}
+
 internal fun IStoreProvider.notifyPropertyChanged(property: KProperty<*>) {
     val flow = fromStore {
         getInstance<MutableStateFlow<PropertyEvent>>(dataPropertyKey(property))

@@ -27,17 +27,16 @@ class MainActivity : AppCompatActivity(), StoreComponent {
                     }
                 }
                 stareAt(::data) {
-                    println("enter this line data=$this")
+//                    println("enter this line data=$this")
 
                 }
                 stareAt(::count){
-                    binding.count.text="count=$this"
+//                    binding.count.text="count=$this"
                 }
-//                stareAt(::data,::count){
-//                    println("enter this line 9999")
-//                    binding.data.text = "data=$data"
-//                    binding.count.text="count=$count"
-//                }
+                stareAt(::data,::count){
+                    binding.data.text = "data=$data"
+                    binding.count.text="count=$count"
+                }
             }
         }
     }

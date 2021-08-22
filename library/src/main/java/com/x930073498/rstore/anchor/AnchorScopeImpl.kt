@@ -20,49 +20,48 @@ import kotlin.reflect.KProperty
 import kotlin.reflect.KProperty0
 import kotlin.reflect.KProperty1
 
+data class PropertyValue(val property: KProperty<*>, val value: Any?)
 
 internal class PropertyAction<T : IStoreProvider, V>(
     private val property: KProperty<V>,
-    private val map: MutableMap<KProperty<*>, Any?>,
     private val equals: Equals<V>,
     private val action: V.() -> Unit,
 ) {
     suspend fun run(
         provider: T,
         changeProperty: List<KProperty<*>>,
+        map: MutableMap<KProperty<*>, Any?>,
         isForce: Boolean,
-    ) {
-        return if (isForce) {
+    ): PropertyValue {
+        val result = if (isForce) {
             run(provider, map[property])
         } else {
-            run(provider, changeProperty)
+            run(provider, changeProperty, map[property])
         }
+        return PropertyValue(property, result)
 
     }
 
-    private suspend fun run(provider: T, changeProperty: List<KProperty<*>>) {
+    private suspend fun run(provider: T, changeProperty: List<KProperty<*>>, pre: Any?): Any? {
         val changedProperty = changeProperty.firstOrNull {
-            println("enter this line 4 ${it.name}")
             it == property || it.name == property.name
         }
-        if (changedProperty != null) {
-            run(provider, map[property])
-            println("enter this line 8 ${property.name}")
-        } else {
-            println("enter this line 9 ${property.name}")
-        }
+        return if (changedProperty != null) {
+            run(provider, pre)
+        } else pre
+
     }
 
-    private suspend fun run(provider: T, pre: Any?) {
-        when (property) {
+    private suspend fun run(provider: T, pre: Any?): Any? {
+        return when (property) {
             is KProperty0<V> -> {
                 val v = property.invoke()
                 if (!equals.equals(v, pre as? V)) {
                     withContext(provider.main) {
                         action(v)
                     }
-                    map[property] = v
                 }
+                v
             }
             is KProperty1<*, V> -> {
                 property as KProperty1<T, V>
@@ -71,9 +70,10 @@ internal class PropertyAction<T : IStoreProvider, V>(
                     withContext(provider.main) {
                         action(v)
                     }
-                    map[property] = v
                 }
+                v
             }
+            else -> pre
 
         }
     }
@@ -154,8 +154,10 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
                 }
                 initAction = {}
             }
-            actions.forEach {
-                it.run(storeProvider, properties, !isInitialized)
+            actions.map {
+                it.run(storeProvider, properties, changedPropertyValueMap, !isInitialized)
+            }.forEach {
+                changedPropertyValueMap[it.property] = it.value
             }
             actions.clear()
             isInitialized = true
@@ -169,11 +171,9 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
     }
 
     override fun <V> stareAt(property: KProperty<V>, equals: Equals<V>, action: V.() -> Unit) {
-        println("enter this line property=${property.name}")
         actions.add(
             PropertyAction(
                 property,
-                changedPropertyValueMap,
                 equals,
                 action
             )
