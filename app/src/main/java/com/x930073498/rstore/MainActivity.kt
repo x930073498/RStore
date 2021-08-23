@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import androidx.lifecycle.ViewModelProvider
 import com.x930073498.rstore.databinding.ActivityMainBinding
+
 @SuppressLint("SetTextI18n")
 class MainActivity : AppCompatActivity(), StoreComponent {
     private val viewModel by lazy { ViewModelProvider(this).get(MainViewModel::class.java) }
@@ -14,8 +15,9 @@ class MainActivity : AppCompatActivity(), StoreComponent {
         setContentView(binding.root)
         setState(binding)
     }
-    private fun setState(binding:  ActivityMainBinding) {
-        viewModel.withAnchor {
+
+    private fun setState(binding: ActivityMainBinding) {
+        withAnchor(viewModel) {
             with(it) {
                 onInitialized {
                     binding.root.setOnClickListener { data = "${++count}" }

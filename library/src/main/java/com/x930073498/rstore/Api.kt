@@ -49,3 +49,20 @@ fun <T : IStoreProvider, V> listProperty(
     property(emptyList(), shouldSaveState, isAnchorProperty, ListEquals(equals))
 
 
+fun <T : IStoreProvider> StoreComponent.withAnchor(
+    provider: T,
+    lifecycleOwner: LifecycleOwner = defaultLifecycleOwner,
+    action: T.(AnchorScope<T>) -> Unit
+) {
+    provider.registerAnchorPropertyChangedListener(this, lifecycleOwner, action)
+}
+
+fun <T : IStoreProvider, V> StoreComponent.withProperty(
+    provider: T,
+    property: KProperty<V>,
+    lifecycleOwner: LifecycleOwner = defaultLifecycleOwner,
+    action: V.() -> Unit
+) {
+    provider.registerPropertyChangedListener(property, lifecycleOwner, action)
+}
+
