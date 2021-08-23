@@ -7,7 +7,7 @@ android {
     compileSdk 30
 
     defaultConfig {
-        applicationId "com.x930073498.rstore"
+        applicationId "com.x930073498.sample"
         minSdk 21
         targetSdk 30
         versionCode 1

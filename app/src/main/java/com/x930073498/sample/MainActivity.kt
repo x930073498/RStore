@@ -1,10 +1,12 @@
-package com.x930073498.rstore
+package com.x930073498.sample
 
 import android.annotation.SuppressLint
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import androidx.lifecycle.ViewModelProvider
-import com.x930073498.rstore.databinding.ActivityMainBinding
+import com.x930073498.rstore.StoreComponent
+import com.x930073498.rstore.withAnchor
+import com.x930073498.sample.databinding.ActivityMainBinding
 
 @SuppressLint("SetTextI18n")
 class MainActivity : AppCompatActivity(), StoreComponent {
