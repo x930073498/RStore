@@ -19,12 +19,19 @@ class MainActivity : AppCompatActivity(), StoreComponent {
     }
 
     private fun setState(binding: ActivityMainBinding) {
-        withAnchor(viewModel) {
-            with(it) {
+        withAnchor(viewModel) { scope ->
+            with(scope) {
                 onInitialized {
-                    binding.root.setOnClickListener { data = "${++count}" }
+                    binding.root.setOnClickListener {
+                        data.postValue(++count)
+                    }
+//                    data.observe(this@MainActivity) {
+//                        binding.data.text = "data=$it"
+//                    }
                 }
-                stareAt(::data) { binding.data.text = "data=$data" }
+                stareAt(::data) {
+                    println("enter this line 9999")
+                    binding.data.text = "data=${data.value}" }
             }
         }
     }

@@ -9,7 +9,6 @@ interface AnchorScope<T : IStoreProvider> {
 
     fun <V> stareAt(
         property: KProperty<V>,
-        equals: Equals<V> = DefaultEquals(),
         action: V.() -> Unit
     )
 }

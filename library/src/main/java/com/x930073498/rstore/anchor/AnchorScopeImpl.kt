@@ -2,6 +2,7 @@ package com.x930073498.rstore.anchor
 
 import androidx.collection.arrayMapOf
 import com.x930073498.rstore.AnchorScope
+import com.x930073498.rstore.DefaultEquals
 import com.x930073498.rstore.Disposable
 import com.x930073498.rstore.Equals
 import com.x930073498.rstore.core.IStoreProvider
@@ -24,7 +25,6 @@ data class PropertyValue(val property: KProperty<*>, val value: Any?)
 
 internal class PropertyAction<T : IStoreProvider, V>(
     private val property: KProperty<V>,
-    private val equals: Equals<V>,
     private val action: V.() -> Unit,
 ) {
     suspend fun run(
@@ -56,20 +56,16 @@ internal class PropertyAction<T : IStoreProvider, V>(
         return when (property) {
             is KProperty0<V> -> {
                 val v = property.invoke()
-                if (!equals.equals(v, pre as? V)) {
-                    withContext(provider.main) {
-                        action(v)
-                    }
+                withContext(provider.main) {
+                    action(v)
                 }
                 v
             }
             is KProperty1<*, V> -> {
                 property as KProperty1<T, V>
                 val v = property.invoke(provider)
-                if (!equals.equals(v, pre as? V)) {
-                    withContext(provider.main) {
-                        action(v)
-                    }
+                withContext(provider.main) {
+                    action(v)
                 }
                 v
             }
@@ -104,10 +100,10 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
         changedProperties.clear()
     }
 
-    private fun pushProperty(event: PropertyEvent) {
+    private fun pushProperty(property: KProperty<*>) {
         lock.lock()
-        changedProperties.remove(event.property)
-        changedProperties.add(event.property)
+        changedProperties.remove(property)
+        changedProperties.add(property)
         lock.unlock()
         changedChannel.trySend(count++)
     }
@@ -128,7 +124,7 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
                 async(io) {
                     changedChannel.trySend(count++)
                     flow.collect {
-                        pushProperty(it)
+                        pushProperty(it.property)
                     }
                 }.start()
                 async(io) {
@@ -170,11 +166,10 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
         initAction = action
     }
 
-    override fun <V> stareAt(property: KProperty<V>, equals: Equals<V>, action: V.() -> Unit) {
+    override fun <V> stareAt(property: KProperty<V>, action: V.() -> Unit) {
         actions.add(
             PropertyAction(
                 property,
-                equals,
                 action
             )
         )

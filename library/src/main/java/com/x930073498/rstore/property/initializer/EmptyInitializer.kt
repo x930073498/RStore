@@ -5,14 +5,13 @@ import com.x930073498.rstore.property.DelegateProcess
 import com.x930073498.rstore.property.SourceInitializer
 import kotlin.reflect.KProperty
 
-internal class InstanceInitializer<T : IStoreProvider, Source> : SourceInitializer<T, Source, Source> {
+internal class EmptyInitializer<T : IStoreProvider, Data,Source> : SourceInitializer<T, Data, Source> {
     override fun T.onInitialized(
         property: KProperty<*>,
-        process: DelegateProcess<T, Source, Source>,
-        data: Source?,
+        process: DelegateProcess<T, Data, Source>,
+        data: Data?,
         source: Source
     ) {
-
     }
 
 

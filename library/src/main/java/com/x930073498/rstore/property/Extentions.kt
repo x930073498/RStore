@@ -30,7 +30,10 @@ internal data class PropertyEvent(
 
 private fun KProperty<*>.asEvent() = PropertyEvent(this)
 
-internal fun <T : IStoreProvider, V> T.invokeAction(kProperty: KProperty<V>, action: V.() -> Unit) {
+internal inline fun <T : IStoreProvider, V> T.invokeAction(
+    kProperty: KProperty<V>,
+    action: V.() -> Unit
+) {
     with(kProperty) {
         if (this is KProperty0) action(invoke())
         else if (this is KProperty1<*, V>) {
@@ -49,6 +52,27 @@ internal fun IStoreProvider.notifyPropertyChanged(property: KProperty<*>) {
     flow.tryEmit(property.asEvent())
 }
 
+
+suspend fun <T : IStoreProvider, V> T.awaitUntil(
+    property: KProperty<V>,
+    predicate: suspend V.() -> Boolean
+) {
+    val flow = fromStore {
+        getOrCreate(dataPropertyKey(property)) {
+            MutableStateFlow(property.asEvent())
+        }
+    }
+    flow.filter {
+        val value: V = if (property is KProperty0) {
+            property.invoke()
+        } else {
+            property as KProperty1<T, V>
+            property.invoke(this)
+        }
+        predicate.invoke(value)
+    }.first()
+
+}
 
 internal fun <T : IStoreProvider, V> T.registerPropertyChangedListenerImpl(
     property: KProperty<V>,
@@ -86,7 +110,9 @@ internal fun <T : IStoreProvider, V> T.registerPropertyChangedListenerImpl(
 }
 
 
-internal fun IStoreProvider.notifyAnchorPropertyChanged(property: KProperty<*>) {
+internal fun IStoreProvider.notifyAnchorPropertyChanged(
+    property: KProperty<*>,
+) {
     fromStore {
         val flow = getInstance<Channel<PropertyEvent>>(anchorPropertyEventChannelKey)
         flow?.trySend(property.asEvent())
@@ -166,20 +192,10 @@ internal operator fun Disposable.plus(disposable: Disposable) = Disposable {
     disposable.dispose()
 }
 
-private fun Disposable.bindLifecycle(lifecycle: Lifecycle) = apply {
-    runOnMain {
-        lifecycle.addObserver(object : DefaultLifecycleObserver {
-            override fun onDestroy(owner: LifecycleOwner) {
-                dispose()
-            }
-        })
-    }
-}
 
-private fun runOnMain(block: () -> Unit) {
-    if (Looper.getMainLooper() == Looper.myLooper()) {
-        block()
-        return
-    }
-    Handler(Looper.getMainLooper()).post { block() }
+internal fun <T : IStoreProvider> AnchorScope<T>.stareAtImpl(
+    vararg property: KProperty<*>,
+    action: () -> Unit
+) {
+    property.forEach { stareAt(it) { action() } }
 }
