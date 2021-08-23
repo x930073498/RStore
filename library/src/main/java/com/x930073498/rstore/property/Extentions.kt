@@ -30,16 +30,15 @@ internal data class PropertyEvent(
 
 private fun KProperty<*>.asEvent() = PropertyEvent(this)
 
-internal fun <T : IStoreProvider, V> T.propertyValue(kProperty: KProperty<V>): V? {
+internal fun <T : IStoreProvider, V> T.invokeAction(kProperty: KProperty<V>, action: V.() -> Unit) {
     with(kProperty) {
-        if (this is KProperty0) return invoke()
-        if (this is KProperty1<*, V>) {
-            return runCatching {
+        if (this is KProperty0) action(invoke())
+        else if (this is KProperty1<*, V>) {
+            runCatching {
                 this as KProperty1<T, V>
-                invoke(this@propertyValue)
-            }.getOrNull()
+                action(invoke(this@invokeAction))
+            }
         }
-        return null
     }
 }
 
@@ -62,19 +61,10 @@ internal fun <T : IStoreProvider, V> T.registerPropertyChangedListenerImpl(
         }
     }
 
-    fun doAction() {
-        if (property is KProperty0<V>) {
-            action(property.invoke())
-        } else if (property is KProperty1<*, *>) {
-            (property as? KProperty1<T, V>)?.let {
-                action(it.invoke(this))
-            }
-        }
-    }
     if (lifecycleOwner == null) {
         val job = coroutineScope.launch(main) {
             flow.collect {
-                doAction()
+                invokeAction(property, action)
             }
         }
         return Disposable {
@@ -83,10 +73,13 @@ internal fun <T : IStoreProvider, V> T.registerPropertyChangedListenerImpl(
     } else {
         val liveData = flow.asLiveData(main)
         val observer = Observer<Any?> {
-            doAction()
+            invokeAction(property, action)
         }
-        liveData.observe(lifecycleOwner, observer)
+        val job = coroutineScope.launch(main) {
+            liveData.observe(lifecycleOwner, observer)
+        }
         return Disposable {
+            job.cancel()
             liveData.removeObserver(observer)
         }
     }
