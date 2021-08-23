@@ -8,13 +8,15 @@ class ListEquals<V, T : List<V>>(private val equals: Equals<V>) : Equals<T> {
         return if (data1 != null) {
             if (data2 == null) false
             else {
-                if (data1 === data2) true
-                else if (data1.size != data2.size) false
-                else {
-                    for (i in data1.indices) {
-                        if (!equals.equals(data1[i], data2[i])) return false
+                when {
+                    data1 === data2 -> true
+                    data1.size != data2.size -> false
+                    else -> {
+                        for (i in data1.indices) {
+                            if (!equals.equals(data1[i], data2[i])) return false
+                        }
+                        true
                     }
-                    true
                 }
             }
         } else {

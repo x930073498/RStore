@@ -25,10 +25,12 @@ private const val anchorStoreComponentKey = "87e64dd9-6d9b-415f-b10b-5bd04d04dbb
 
 internal data class PropertyEvent(
     val property: KProperty<*>,
+    val equals: Equals<*>,
     val id: String = UUID.randomUUID().toString()
 )
 
-private fun KProperty<*>.asEvent() = PropertyEvent(this)
+private fun KProperty<*>.asEvent(equals: Equals<*> = DefaultEquals<Any>()) =
+    PropertyEvent(this, equals)
 
 internal inline fun <T : IStoreProvider, V> T.invokeAction(
     kProperty: KProperty<V>,
@@ -45,11 +47,11 @@ internal inline fun <T : IStoreProvider, V> T.invokeAction(
     }
 }
 
-internal fun IStoreProvider.notifyPropertyChanged(property: KProperty<*>) {
+internal fun IStoreProvider.notifyPropertyChanged(property: KProperty<*>, equals: Equals<*>) {
     val flow = fromStore {
         getInstance<MutableStateFlow<PropertyEvent>>(dataPropertyKey(property))
     } ?: return
-    flow.tryEmit(property.asEvent())
+    flow.tryEmit(property.asEvent(equals))
 }
 
 
@@ -112,10 +114,11 @@ internal fun <T : IStoreProvider, V> T.registerPropertyChangedListenerImpl(
 
 internal fun IStoreProvider.notifyAnchorPropertyChanged(
     property: KProperty<*>,
+    equals: Equals<*>
 ) {
     fromStore {
         val flow = getInstance<Channel<PropertyEvent>>(anchorPropertyEventChannelKey)
-        flow?.trySend(property.asEvent())
+        flow?.trySend(property.asEvent(equals))
     }
 
 }

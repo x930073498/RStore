@@ -23,7 +23,7 @@ class MainActivity : AppCompatActivity(), StoreComponent {
             with(scope) {
                 onInitialized {
                     binding.root.setOnClickListener {
-                        data.postValue(++count)
+                        data.tryEmit(++count)
                     }
 //                    data.observe(this@MainActivity) {
 //                        binding.data.text = "data=$it"
