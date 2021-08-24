@@ -17,7 +17,7 @@ internal class StandardNotifier<T : IStoreProvider, Data, Source> :
         data: Data?,
         source: Source?
     ) {
-        val equals = TransformEquals(this, property, process)
+        val equals = process.realEquals(this, property)
         notifyPropertyChanged(property, equals)
         with(process) {
             with(checker) {

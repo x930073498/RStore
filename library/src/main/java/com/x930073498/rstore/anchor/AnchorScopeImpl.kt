@@ -56,7 +56,7 @@ internal class PropertyAction<T : IStoreProvider, V>(
         return when (property) {
             is KProperty0<V> -> {
                 val v = property.invoke()
-                if (equals.equals(v, pre)) {
+                if (!equals.equals(v, pre)) {
                     withContext(provider.main) {
                         action(v)
                     }
@@ -66,7 +66,7 @@ internal class PropertyAction<T : IStoreProvider, V>(
             is KProperty1<*, V> -> {
                 property as KProperty1<T, V>
                 val v = property.invoke(provider)
-                if (equals.equals(v, pre)) {
+                if (!equals.equals(v, pre)) {
                     withContext(provider.main) {
                         action(v)
                     }

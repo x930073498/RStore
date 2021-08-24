@@ -7,6 +7,9 @@ import androidx.lifecycle.ViewModelProvider
 import com.x930073498.rstore.StoreComponent
 import com.x930073498.rstore.withAnchor
 import com.x930073498.sample.databinding.ActivityMainBinding
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import java.util.*
 
 @SuppressLint("SetTextI18n")
 class MainActivity : AppCompatActivity(), StoreComponent {
@@ -25,13 +28,25 @@ class MainActivity : AppCompatActivity(), StoreComponent {
                     binding.root.setOnClickListener {
                         data.tryEmit(++count)
                     }
+                    coroutineScope.launch {
+                        while (true) {
+                            delay(1000)
+                            list = arrayListOf(UUID.randomUUID().toString())
+
+
+                        }
+                    }
 //                    data.observe(this@MainActivity) {
 //                        binding.data.text = "data=$it"
 //                    }
                 }
                 stareAt(::data) {
                     println("enter this line 9999")
-                    binding.data.text = "data=${data.value}" }
+                    binding.data.text = "data=${data.value}"
+                }
+                stareAt(::list) {
+                    println(this)
+                }
             }
         }
     }

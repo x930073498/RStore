@@ -12,5 +12,6 @@ class MainViewModel(application: Application, handle: SavedStateHandle) :
     SaveStateStoreViewModel(application, handle) {
     var count = 0
     val data by flowProperty(count, isAnchorProperty = true)
+    var list by listProperty<String>(isAnchorProperty = true)
 
 }

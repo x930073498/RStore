@@ -12,7 +12,7 @@ afterEvaluate {
                 from components.release
                 groupId = 'com.github.x930073498'
                 artifactId = 'RStore'
-                version = '0.0.6'
+                version = '0.0.7'
             }
         }
     }

@@ -14,7 +14,11 @@ class TransformEquals<T : IStoreProvider, Data, Source>(
         if (data1 != data2) return false
         return with(provider) {
             with(process) {
-                equals(property, data1, data2)
+                with(factory) {
+                    val first = if (data1 == null) null else transform(property, process, data1)
+                    val second = if (data2 == null) null else transform(property, process, data2)
+                    equals.equals(first, second)
+                }
             }
         }
     }
