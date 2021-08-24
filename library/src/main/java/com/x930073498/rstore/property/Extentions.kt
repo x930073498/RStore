@@ -32,19 +32,26 @@ internal data class PropertyEvent(
 private fun KProperty<*>.asEvent() =
     PropertyEvent(this)
 
-internal inline fun <T : IStoreProvider, V> T.invokeAction(
+internal fun <T : IStoreProvider, V> T.valueFromProperty(kProperty: KProperty<V>): V? {
+    return with(kProperty) {
+        when (this) {
+            is KProperty0 -> invoke()
+            is KProperty1<*, V> -> {
+                runCatching {
+                    this as KProperty1<T, V>
+                    invoke(this@valueFromProperty)
+                }.getOrNull()
+            }
+            else -> null
+        }
+    }
+}
+
+internal fun <T : IStoreProvider, V> T.invokeAction(
     kProperty: KProperty<V>,
     action: V.() -> Unit
 ) {
-    with(kProperty) {
-        if (this is KProperty0) action(invoke())
-        else if (this is KProperty1<*, V>) {
-            runCatching {
-                this as KProperty1<T, V>
-                action(invoke(this@invokeAction))
-            }
-        }
-    }
+    valueFromProperty(kProperty)?.apply(action)
 }
 
 internal fun IStoreProvider.notifyPropertyChanged(property: KProperty<*>) {
@@ -181,7 +188,7 @@ internal fun <T : IStoreProvider> T.registerAnchorPropertyChangedListenerImpl(
 }
 
 
-internal fun dataSaveStateKey(storeId:String,property: KProperty<*>): String {
+internal fun dataSaveStateKey(storeId: String, property: KProperty<*>): String {
     return "000000_${property.name}_${storeId}_00000"
 }
 

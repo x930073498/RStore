@@ -1,12 +1,11 @@
 package com.x930073498.rstore.anchor
 
-import androidx.collection.arrayMapOf
 import com.x930073498.rstore.AnchorScope
-import com.x930073498.rstore.DefaultEquals
 import com.x930073498.rstore.Disposable
-import com.x930073498.rstore.Equals
 import com.x930073498.rstore.core.IStoreProvider
 import com.x930073498.rstore.property.PropertyEvent
+import com.x930073498.rstore.property.invokeAction
+import com.x930073498.rstore.property.valueFromProperty
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.BufferOverflow
@@ -18,8 +17,6 @@ import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withContext
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.reflect.KProperty
-import kotlin.reflect.KProperty0
-import kotlin.reflect.KProperty1
 
 data class PropertyValue(val property: KProperty<*>, val value: Any?)
 
@@ -30,51 +27,28 @@ internal class PropertyAction<T : IStoreProvider, V>(
     suspend fun run(
         provider: T,
         changeProperty: List<KProperty<*>>,
-        map: MutableMap<KProperty<*>, Any?>,
-        isForce: Boolean,
-    ): PropertyValue {
-        val result = if (isForce) {
-            run(provider, map[property])
+        isFirstRun: Boolean,
+    ) {
+        if (isFirstRun) {
+            provider.valueFromProperty(property)
         } else {
-            run(provider, changeProperty, map[property])
+            run(provider, changeProperty)
         }
-        return PropertyValue(property, result)
-
     }
 
-    private suspend fun run(provider: T, changeProperty: List<KProperty<*>>, pre: Any?): Any? {
+    private suspend fun run(provider: T, changeProperty: List<KProperty<*>>) {
         val changedProperty = changeProperty.firstOrNull {
             it == property || it.name == property.name
         }
-        return if (changedProperty != null) {
-            run(provider, pre)
-        } else pre
+        if (changedProperty != null) {
+            run(provider)
+        }
 
     }
 
-    private suspend fun run(provider: T, pre: Any?): Any? {
-        return when (property) {
-            is KProperty0<V> -> {
-                val v = property.invoke()
-//                if (!equals.equals(v, pre)) {
-                    withContext(provider.main) {
-                        action(v)
-                    }
-//                }
-                v
-            }
-            is KProperty1<*, V> -> {
-                property as KProperty1<T, V>
-                val v = property.invoke(provider)
-//                if (!equals.equals(v, pre)) {
-                    withContext(provider.main) {
-                        action(v)
-                    }
-//                }
-                v
-            }
-            else -> pre
-
+    private suspend fun run(provider: T) {
+        withContext(provider.main) {
+            provider.invokeAction(property, action)
         }
     }
 
@@ -92,7 +66,6 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
     private var isInitialized = false
     private val changedProperties = arrayListOf<KProperty<*>>()
     private val changedChannel = Channel<Int>(1, BufferOverflow.DROP_OLDEST)
-    private val changedPropertyValueMap = arrayMapOf<KProperty<*>, Any?>()
     private val actions = arrayListOf<PropertyAction<T, *>>()
     private var initAction: () -> Unit = {}
     private val lock = ReentrantLock()
@@ -100,19 +73,11 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
 
     override fun dispose() {
         job?.cancel()
-        changedPropertyValueMap.clear()
         changedProperties.clear()
     }
 
     private fun pushProperty(property: KProperty<*>) {
         lock.lock()
-//        val iterator = changedProperties.iterator()
-//        while (iterator.hasNext()) {
-//            val temp = iterator.next()
-//            if (temp.property == property.property) {
-//                iterator.remove()
-//            }
-//        }
         changedProperties.remove(property)
         changedProperties.add(property)
         lock.unlock()
@@ -162,9 +127,7 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
                 initAction = {}
             }
             actions.map {
-                it.run(storeProvider, properties, changedPropertyValueMap, !isInitialized)
-            }.forEach {
-                changedPropertyValueMap[it.property] = it.value
+                it.run(storeProvider, properties, !isInitialized)
             }
             actions.clear()
             isInitialized = true
