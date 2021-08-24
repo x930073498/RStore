@@ -1,7 +1,5 @@
 package com.x930073498.rstore.property
 
-import android.os.Handler
-import android.os.Looper
 import androidx.lifecycle.*
 import androidx.lifecycle.Observer
 import com.x930073498.rstore.*

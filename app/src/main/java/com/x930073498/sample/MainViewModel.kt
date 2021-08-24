@@ -10,8 +10,8 @@ import com.x930073498.rstore.property
 
 class MainViewModel(application: Application, handle: SavedStateHandle) :
     SaveStateStoreViewModel(application, handle) {
-    var count = 0
-    val data by flowProperty(count, isAnchorProperty = true,shouldSaveState = true)
+    var count by property(0,shouldSaveState = true)
+    val data by flowProperty(count, isAnchorProperty = true, shouldSaveState = true)
     var list by listProperty<String>(isAnchorProperty = true)
 
 }
