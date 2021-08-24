@@ -13,5 +13,4 @@ class MainViewModel(application: Application, handle: SavedStateHandle) :
     var count by property(0,shouldSaveState = true)
     val data by flowProperty(count, isAnchorProperty = true, shouldSaveState = true)
     var list by listProperty<String>(isAnchorProperty = true)
-
 }
