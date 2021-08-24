@@ -17,15 +17,11 @@ internal class StandardNotifier<T : IStoreProvider, Data, Source> :
         data: Data?,
         source: Source?
     ) {
-        val equals = process.realEquals(this, property)
-        notifyPropertyChanged(property, equals)
+        notifyPropertyChanged(property)
         with(process) {
             with(checker) {
                 if (isAnchorProperty(property, process)) {
-                    notifyAnchorPropertyChanged(property, equals)
-                }
-                if (shouldSaveState(property, process) && this@notify is ISaveStateStoreProvider) {
-                    saveState(dataSaveStateKey(property), data)
+                    notifyAnchorPropertyChanged(property)
                 }
             }
         }

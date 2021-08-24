@@ -29,12 +29,12 @@ internal class PropertyAction<T : IStoreProvider, V>(
 ) {
     suspend fun run(
         provider: T,
-        changeProperty: List<PropertyEvent>,
+        changeProperty: List<KProperty<*>>,
         map: MutableMap<KProperty<*>, Any?>,
         isForce: Boolean,
     ): PropertyValue {
         val result = if (isForce) {
-            run(provider, map[property], DefaultEquals())
+            run(provider, map[property])
         } else {
             run(provider, changeProperty, map[property])
         }
@@ -42,35 +42,35 @@ internal class PropertyAction<T : IStoreProvider, V>(
 
     }
 
-    private suspend fun run(provider: T, changeProperty: List<PropertyEvent>, pre: Any?): Any? {
+    private suspend fun run(provider: T, changeProperty: List<KProperty<*>>, pre: Any?): Any? {
         val changedProperty = changeProperty.firstOrNull {
-            it.property == property || it.property.name == property.name
+            it == property || it.name == property.name
         }
         return if (changedProperty != null) {
-            run(provider, pre, changedProperty.equals as Equals<Any?>)
+            run(provider, pre)
         } else pre
 
     }
 
-    private suspend fun run(provider: T, pre: Any?, equals: Equals<Any?>): Any? {
+    private suspend fun run(provider: T, pre: Any?): Any? {
         return when (property) {
             is KProperty0<V> -> {
                 val v = property.invoke()
-                if (!equals.equals(v, pre)) {
+//                if (!equals.equals(v, pre)) {
                     withContext(provider.main) {
                         action(v)
                     }
-                }
+//                }
                 v
             }
             is KProperty1<*, V> -> {
                 property as KProperty1<T, V>
                 val v = property.invoke(provider)
-                if (!equals.equals(v, pre)) {
+//                if (!equals.equals(v, pre)) {
                     withContext(provider.main) {
                         action(v)
                     }
-                }
+//                }
                 v
             }
             else -> pre
@@ -90,7 +90,7 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
     private var isPause = true
     private val pauseChannel = Channel<Boolean>(1)
     private var isInitialized = false
-    private val changedProperties = arrayListOf<PropertyEvent>()
+    private val changedProperties = arrayListOf<KProperty<*>>()
     private val changedChannel = Channel<Int>(1, BufferOverflow.DROP_OLDEST)
     private val changedPropertyValueMap = arrayMapOf<KProperty<*>, Any?>()
     private val actions = arrayListOf<PropertyAction<T, *>>()
@@ -104,21 +104,22 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
         changedProperties.clear()
     }
 
-    private fun pushProperty(property: PropertyEvent) {
+    private fun pushProperty(property: KProperty<*>) {
         lock.lock()
-        val iterator = changedProperties.iterator()
-        while (iterator.hasNext()) {
-            val temp = iterator.next()
-            if (temp.property == property.property) {
-                iterator.remove()
-            }
-        }
+//        val iterator = changedProperties.iterator()
+//        while (iterator.hasNext()) {
+//            val temp = iterator.next()
+//            if (temp.property == property.property) {
+//                iterator.remove()
+//            }
+//        }
+        changedProperties.remove(property)
         changedProperties.add(property)
         lock.unlock()
         changedChannel.trySend(count++)
     }
 
-    private fun getChangedPropertiesSnap(): List<PropertyEvent> {
+    private fun getChangedPropertiesSnap(): List<KProperty<*>> {
         lock.lock()
         val result = changedProperties.toList()
         changedProperties.clear()
@@ -134,7 +135,7 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
                 async(io) {
                     changedChannel.trySend(count++)
                     flow.collect {
-                        pushProperty(it)
+                        pushProperty(it.property)
                     }
                 }.start()
                 async(io) {

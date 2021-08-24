@@ -17,11 +17,15 @@ class MutableStateFlowFactory<T : IStoreProvider, Data>(private val defaultValue
         process: DelegateProcess<T, Data, MutableStateFlow<Data>>,
         data: Data?
     ): MutableStateFlow<Data> {
+        var pre = data
         return MutableStateFlow(data ?: defaultValue).apply {
             coroutineScope.launch(io) {
                 collect {
-                    with(process.notifier) {
-                        notify(property, process, data, this@apply)
+                    if (!process.equals(pre, it)) {
+                        pre = it
+                        with(process.notifier) {
+                            notify(property, process, pre, this@apply)
+                        }
                     }
                 }
             }

@@ -29,19 +29,19 @@ class MainActivity : AppCompatActivity(), StoreComponent {
                         data.tryEmit(++count)
                     }
                     coroutineScope.launch {
-                        while (true) {
-                            delay(1000)
-                            list = arrayListOf(UUID.randomUUID().toString())
-
-
-                        }
+//                        while (true) {
+//                            delay(1000)
+//                            list = arrayListOf(UUID.randomUUID().toString())
+//
+//
+//                        }
                     }
 //                    data.observe(this@MainActivity) {
 //                        binding.data.text = "data=$it"
 //                    }
                 }
                 stareAt(::data) {
-                    println("enter this line 9999")
+                    println("enter this line data")
                     binding.data.text = "data=${data.value}"
                 }
                 stareAt(::list) {

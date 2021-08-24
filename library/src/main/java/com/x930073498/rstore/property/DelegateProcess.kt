@@ -12,12 +12,17 @@ data class DelegateProcess<T : IStoreProvider, Data, Source> constructor(
     val checker: StateChecker<T, Data, Source>,
     val equals: Equals<Data>
 ) {
-    fun realEquals(provider: T, property: KProperty<*>): Equals<Source> {
+    internal fun realEquals(provider: T, property: KProperty<*>): Equals<Source> {
         return TransformEquals(provider, property, this)
     }
 
 
     fun T.equals(property: KProperty<*>, first: Source?, second: Source?): Boolean {
         return realEquals(this, property).equals(first, second)
+    }
+
+
+    fun equals(data1: Data?, data2: Data?): Boolean {
+        return equals.equals(data1, data2)
     }
 }

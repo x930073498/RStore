@@ -23,7 +23,9 @@ interface ISaveStateStoreProvider {
 }
 
 
-interface ISaveStateStore : IStore
+interface ISaveStateStore : IStore{
+    val id:String
+}
 interface IStore : Disposable {
     fun remove(key: String)
 
@@ -35,6 +37,7 @@ interface IStore : Disposable {
     override fun dispose() {
         clear()
     }
+
 
 }
 

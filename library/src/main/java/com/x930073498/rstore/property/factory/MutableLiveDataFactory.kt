@@ -31,16 +31,21 @@ class MutLiveDataFactory<T : IStoreProvider, Data>(private val defaultValue: Dat
         process: DelegateProcess<T, Data, MutableLiveData<Data>>,
         data: Data?
     ): MutableLiveData<Data> {
+        var pre: Data? = null
         val liveData = ObservableLiveData<Data>()
         liveData.apply {
             action = {
-                with(process.notifier) {
-                    notify(property, process, data, this@apply)
+                if (!process.equals(pre, this)) {
+                    pre = this
+                    with(process.notifier) {
+                        notify(property, process, pre, this@apply)
+                    }
                 }
+
             }
             if (data != null) {
                 postValue(data)
-            }else if (defaultValue!=null){
+            } else if (defaultValue != null) {
                 postValue(defaultValue)
             }
         }
