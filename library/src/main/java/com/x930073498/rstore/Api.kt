@@ -114,7 +114,7 @@ fun <V> IStoreProvider.listLiveDataProperty(
 ): ReadOnlyProperty<IStoreProvider, MutableLiveData<List<V>>> {
     return NotifyPropertyDelegate(
         this,
-        MutLiveDataFactory(emptyList()),
+        MutLiveDataFactory(null),
         EmptyInitializer(),
         StandardNotifier(),
         ParamsChecker(false, isAnchorProperty),
@@ -176,7 +176,7 @@ fun <V> IStoreProviderComponent.listLiveDataProperty(
 ): ReadOnlyProperty<IStoreProvider, MutableLiveData<List<V>>> {
     return NotifyPropertyDelegate(
         this,
-        MutLiveDataFactory(emptyList()),
+        MutLiveDataFactory(null),
         EmptyInitializer(),
         StandardNotifier(),
         ParamsChecker(shouldSaveState, isAnchorProperty),
