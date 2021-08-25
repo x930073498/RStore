@@ -23,15 +23,25 @@ interface ISaveStateStoreProvider {
 }
 
 
-interface ISaveStateStore : IStore{
+interface ISaveStateStore :Disposable{
     val id:String
-}
-interface IStore : Disposable {
     fun remove(key: String)
 
     fun put(key: String, value: Any?)
 
     fun get(key: String): Any?
+
+    fun clear()
+    override fun dispose() {
+        clear()
+    }
+}
+interface IStore : Disposable {
+    fun remove(key: Any)
+
+    fun put(key: Any, value: Any?)
+
+    fun get(key: Any): Any?
 
     fun clear()
     override fun dispose() {

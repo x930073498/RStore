@@ -6,7 +6,7 @@ import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 
 class MapStore : IStore {
-    private val map = mutableMapOf<String, Any?>()
+    private val map = mutableMapOf<Any, Any?>()
     private val lock = ReentrantLock()
     private fun <R> doLock(action: () -> R): R {
         lock.lock()
@@ -15,20 +15,20 @@ class MapStore : IStore {
         return result
     }
 
-    override fun remove(key: String) {
+    override fun remove(key: Any) {
         doLock {
             map.remove(key).finish()
 
         }
     }
 
-    override fun put(key: String, value: Any?) {
+    override fun put(key: Any, value: Any?) {
         doLock {
             map[key] = value
         }
     }
 
-    override fun get(key: String): Any? {
+    override fun get(key: Any): Any? {
         return doLock {
             map[key]
         }
