@@ -222,6 +222,17 @@ fun <T : IStoreProvider> StoreComponent.withAnchor(
     provider.registerAnchorPropertyChangedListener(this, lifecycleOwner, option, action)
 }
 
+fun <T : IStoreProvider> StoreComponent.withAnchor(
+    provider: T,
+    starter: AnchorStarter = LifecycleAnchorStarter(
+        defaultLifecycleOwner,
+        LifecycleAnchorStarter.Option.ON_RESUME
+    ),
+    action: T.(AnchorScope<T>) -> Unit
+) {
+    provider.registerAnchorPropertyChangedListener(this, starter, action)
+}
+
 fun <T : IStoreProvider, V> StoreComponent.withProperty(
     provider: T,
     property: KProperty<V>,
