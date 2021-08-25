@@ -15,4 +15,8 @@ abstract class AbstractStoreViewModel(application: Application) : AndroidViewMod
     override val coroutineScope: CoroutineScope = viewModelScope
     override val io: CoroutineContext = Dispatchers.IO
     override val main: CoroutineContext = Dispatchers.Main
+    override fun onCleared() {
+        super.onCleared()
+        store.clear()
+    }
 }
