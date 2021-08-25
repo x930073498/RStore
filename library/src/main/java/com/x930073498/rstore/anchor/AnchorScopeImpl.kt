@@ -1,6 +1,7 @@
 package com.x930073498.rstore.anchor
 
 import com.x930073498.rstore.AnchorScope
+import com.x930073498.rstore.AnchorScopeLifecycleHandler
 import com.x930073498.rstore.Disposable
 import com.x930073498.rstore.core.IStoreProvider
 import com.x930073498.rstore.property.PropertyEvent
@@ -54,12 +55,13 @@ internal class PropertyAction<T : IStoreProvider, V>(
 
 }
 
+
 internal class AnchorScopeImpl<T : IStoreProvider>(
     private val storeProvider: T,
     private val flow: Flow<PropertyEvent>,
     private val action: T.(AnchorScope<T>) -> Unit
 
-) : Disposable, AnchorScope<T> {
+) : Disposable, AnchorScope<T>,AnchorScopeLifecycleHandler {
     private var job: Job? = null
     private var isPause = true
     private val pauseChannel = Channel<Boolean>(1)
@@ -92,7 +94,7 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
         return result
     }
 
-    fun launch() {
+    override fun launch() {
         isInitialized = false
         job?.cancel()
         job = with(storeProvider) {
@@ -161,12 +163,12 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
     }
 
 
-    fun resume() {
+    override fun resume() {
         isPause = false
         pauseChannel.trySend(false)
     }
 
-    fun pause() {
+    override fun pause() {
         isPause = true
         pauseChannel.trySend(true)
 

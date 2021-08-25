@@ -1,24 +1,14 @@
 package com.x930073498.sample
 
 import android.annotation.SuppressLint
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
-import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
 import androidx.lifecycle.ViewModelProvider
+import com.x930073498.rstore.LifecycleAnchorStarter
 import com.x930073498.rstore.StoreComponent
 import com.x930073498.rstore.withAnchor
 import com.x930073498.sample.databinding.ActivityMainBinding
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.lang.RuntimeException
-import java.util.*
-
-
 
 
 @SuppressLint("SetTextI18n")
@@ -34,7 +24,7 @@ class MainActivity : AppCompatActivity(), StoreComponent {
     }
 
     private fun setState(binding: ActivityMainBinding) {
-        withAnchor(viewModel) { scope ->
+        withAnchor(viewModel, option = LifecycleAnchorStarter.Option.ON_CREATE) { scope ->
             with(scope) {
                 onInitialized {
                     binding.root.setOnClickListener {

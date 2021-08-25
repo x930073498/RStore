@@ -129,7 +129,7 @@ internal fun IStoreProvider.notifyAnchorPropertyChanged(
 
 internal fun <T : IStoreProvider> T.registerAnchorPropertyChangedListenerImpl(
     storeComponent: StoreComponent,
-    lifecycleOwner: LifecycleOwner = storeComponent,
+    starter: AnchorStarter = AnchorStarter,
     action: T.(AnchorScope<T>) -> Unit
 ): Disposable {
 
@@ -161,24 +161,7 @@ internal fun <T : IStoreProvider> T.registerAnchorPropertyChangedListenerImpl(
                 }
             }
         })
-        lifecycleOwner.lifecycle.addObserver(object : DefaultLifecycleObserver {
-            override fun onCreate(owner: LifecycleOwner) {
-                scope.launch()
-            }
-
-            override fun onPause(owner: LifecycleOwner) {
-                scope.pause()
-            }
-
-            override fun onResume(owner: LifecycleOwner) {
-                scope.resume()
-            }
-
-            override fun onDestroy(owner: LifecycleOwner) {
-                scope.dispose()
-                anchorScopeStore.remove(id)
-            }
-        })
+        starter.start(scope)
         anchorScopeStore.put(id, scope)
     }
     return scope

@@ -29,8 +29,23 @@ fun <T : IStoreProvider, V> T.registerPropertyChangedListener(
 fun <T : IStoreProvider> T.registerAnchorPropertyChangedListener(
     storeComponent: StoreComponent,
     lifecycleOwner: LifecycleOwner = storeComponent,
+    option: LifecycleAnchorStarter.Option = LifecycleAnchorStarter.Option.ON_RESUME,
     action: T.(AnchorScope<T>) -> Unit
-) = registerAnchorPropertyChangedListenerImpl(storeComponent, lifecycleOwner, action)
+) = registerAnchorPropertyChangedListener(
+    storeComponent,
+    LifecycleAnchorStarter(lifecycleOwner, option),
+    action
+)
+
+fun <T : IStoreProvider> T.registerAnchorPropertyChangedListener(
+    storeComponent: StoreComponent,
+    starter: AnchorStarter = AnchorStarter,
+    action: T.(AnchorScope<T>) -> Unit
+) = registerAnchorPropertyChangedListenerImpl(
+    storeComponent,
+    starter,
+    action
+)
 
 
 fun <V> IStoreProviderComponent.property(
@@ -165,7 +180,7 @@ fun <V> IStoreProviderComponent.listFlowProperty(
         EmptyInitializer(),
         StandardNotifier(),
         ParamsChecker(shouldSaveState, isAnchorProperty),
-       ListEquals(equals)
+        ListEquals(equals)
     )
 }
 
@@ -180,7 +195,7 @@ fun <V> IStoreProviderComponent.listLiveDataProperty(
         EmptyInitializer(),
         StandardNotifier(),
         ParamsChecker(shouldSaveState, isAnchorProperty),
-      ListEquals(equals)
+        ListEquals(equals)
     )
 }
 
@@ -201,9 +216,10 @@ fun <V> IStoreProvider.listProperty(
 fun <T : IStoreProvider> StoreComponent.withAnchor(
     provider: T,
     lifecycleOwner: LifecycleOwner = defaultLifecycleOwner,
+    option: LifecycleAnchorStarter.Option = LifecycleAnchorStarter.Option.ON_RESUME,
     action: T.(AnchorScope<T>) -> Unit
 ) {
-    provider.registerAnchorPropertyChangedListener(this, lifecycleOwner, action)
+    provider.registerAnchorPropertyChangedListener(this, lifecycleOwner, option, action)
 }
 
 fun <T : IStoreProvider, V> StoreComponent.withProperty(
