@@ -161,7 +161,9 @@ internal fun <T : IStoreProvider> T.registerAnchorPropertyChangedListenerImpl(
                 }
             }
         })
-        starter.start(scope)
+        starter.start(scope+ Disposable {
+            anchorScopeStore.remove(id)
+        })
         anchorScopeStore.put(id, scope)
     }
     return scope
@@ -188,4 +190,26 @@ internal fun <T : IStoreProvider> AnchorScope<T>.stareAtImpl(
     action: () -> Unit
 ) {
     property.forEach { stareAt(it) { action() } }
+}
+
+internal operator fun AnchorScopeLifecycleHandler.plus(disposable: Disposable): AnchorScopeLifecycleHandler {
+    return object : AnchorScopeLifecycleHandler {
+        override fun launch() {
+            this@plus.launch()
+        }
+
+        override fun resume() {
+            this@plus.resume()
+        }
+
+        override fun pause() {
+            this@plus.pause()
+        }
+
+        override fun dispose() {
+            this@plus.dispose()
+            disposable.dispose()
+        }
+
+    }
 }

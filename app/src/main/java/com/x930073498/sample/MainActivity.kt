@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import androidx.lifecycle.ViewModelProvider
+import com.x930073498.rstore.AnchorStarter
 import com.x930073498.rstore.LifecycleAnchorStarter
 import com.x930073498.rstore.StoreComponent
 import com.x930073498.rstore.withAnchor
@@ -24,7 +25,7 @@ class MainActivity : AppCompatActivity(), StoreComponent {
     }
 
     private fun setState(binding: ActivityMainBinding) {
-        withAnchor(viewModel, option = LifecycleAnchorStarter.Option.ON_CREATE) { scope ->
+        withAnchor(viewModel, starter = AnchorStarter) { scope ->
             with(scope) {
                 onInitialized {
                     binding.root.setOnClickListener {
