@@ -21,7 +21,8 @@ import kotlin.reflect.KProperty1
 private const val anchorPropertyEventChannelKey = "1306d9dd-5824-4341-af54-d45265fc2a1e"
 private const val anchorPropertyEventsFlowKey = "4dd1aea6-5f82-43be-bddd-d538b5961a38"
 private const val anchorStoreComponentKey = "87e64dd9-6d9b-415f-b10b-5bd04d04dbb3"
-private const val globalChangePropertiesKey="eb3dae31-ff93-43a4-aa8c-51492add1f01"
+private const val globalChangePropertiesKey = "eb3dae31-ff93-43a4-aa8c-51492add1f01"
+
 internal data class PropertyEvent(
     val property: KProperty<*>,
 //    val equals: Equals<*>,
@@ -138,41 +139,20 @@ internal fun <T : IStoreProvider> T.registerAnchorPropertyChangedListenerImpl(
             LockList<KProperty<*>>()
         }
     }
-
-    val componentKey = anchorStoreComponentKey + "code_${storeComponent.hashCode()}_$\$"
-    val anchorScopeStore = fromStore {
-        getOrCreate(componentKey) {
-            MapStore()
-        }
-    }
     val anchorPropertyEventChannel = fromStore {
         getOrCreate(anchorPropertyEventChannelKey) {
             Channel<PropertyEvent>(Channel.UNLIMITED)
         }
     }
-
     val anchorPropertyEventFlow = fromStore {
         getOrCreate(anchorPropertyEventsFlowKey) {
             anchorPropertyEventChannel.receiveAsFlow()
                 .shareIn(coroutineScope, SharingStarted.Lazily)
         }
     }
-    val id = UUID.randomUUID().toString()
-    val scope =
-        AnchorScopeImpl(this, anchorPropertyEventFlow, globalChangeProperties, action)
+    val scope = AnchorScopeImpl(this, anchorPropertyEventFlow, globalChangeProperties, action)
     coroutineScope.launch(main) {
-        storeComponent.lifecycle.addObserver(object : DefaultLifecycleObserver {
-            override fun onDestroy(owner: LifecycleOwner) {
-                fromStore {
-                    remove(componentKey)
-                    anchorScopeStore.dispose()
-                }
-            }
-        })
-        starter.start(scope + Disposable {
-            anchorScopeStore.remove(id)
-        })
-        anchorScopeStore.put(id, scope)
+        starter.start(scope)
     }
     return scope
 

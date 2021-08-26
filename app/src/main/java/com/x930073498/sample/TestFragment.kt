@@ -4,15 +4,15 @@ import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.View
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.LifecycleOwner
-import com.x930073498.rstore.*
+import androidx.fragment.app.viewModels
+import com.x930073498.rstore.LifecycleAnchorStarter
+import com.x930073498.rstore.StoreComponent
+import com.x930073498.rstore.withAnchor
 import com.x930073498.sample.databinding.FragmentTestBinding
 
 class TestFragment : Fragment(R.layout.fragment_test), StoreComponent {
 
-    private val viewModel by activityViewModels<MainViewModel>()
+    private val viewModel by viewModels<MainViewModel>()
 
     private var position = 0
     override fun onCreate(savedInstanceState: Bundle?) {

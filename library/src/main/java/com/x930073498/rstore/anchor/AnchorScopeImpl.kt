@@ -29,20 +29,13 @@ internal class PropertyAction<T : IStoreProvider, V>(
     private val property: KProperty<V>,
     private val action: V.() -> Unit,
 ) {
-
-    suspend fun run(provider: T, container: PropertyContainer): Boolean {
+    suspend fun run(provider: T, container: PropertyContainer) {
         val delegateProperty = container.getDelegateProperty(property)
-        return if (delegateProperty != null) {
-            run(provider)
+        if (delegateProperty != null) {
+            withContext(provider.main) {
+                provider.invokeAction(property, action)
+            }
             container.removeDelegateProperty(delegateProperty)
-            true
-        } else false
-
-    }
-
-    private suspend fun run(provider: T) {
-        withContext(provider.main) {
-            provider.invokeAction(property, action)
         }
     }
 
@@ -72,7 +65,7 @@ internal class DefaultPropertyContainer(private val globalChangedProperties: Loc
             var result =
                 delegateProperties.firstOrNull { property == it || property.name == it.name }
             if (!isInitialized && result == null) {
-                result =
+                result = if (globalChangedProperties.isEmpty()) property else
                     globalChangedProperties.firstOrNull { property == it || property.name == it.name }
             }
             result
