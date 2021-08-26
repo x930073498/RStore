@@ -3,10 +3,14 @@ package com.x930073498.rstore.anchor
 import com.x930073498.rstore.AnchorScope
 import com.x930073498.rstore.AnchorScopeLifecycleHandler
 import com.x930073498.rstore.Disposable
+import com.x930073498.rstore.R
 import com.x930073498.rstore.core.IStoreProvider
+import com.x930073498.rstore.core.fromStore
+import com.x930073498.rstore.core.getOrCreate
 import com.x930073498.rstore.property.PropertyEvent
 import com.x930073498.rstore.property.invokeAction
 import com.x930073498.rstore.property.valueFromProperty
+import com.x930073498.rstore.util.LockList
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.BufferOverflow
@@ -16,34 +20,23 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withContext
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.reflect.KProperty
 
-data class PropertyValue(val property: KProperty<*>, val value: Any?)
 
 internal class PropertyAction<T : IStoreProvider, V>(
     private val property: KProperty<V>,
     private val action: V.() -> Unit,
 ) {
-    suspend fun run(
-        provider: T,
-        changeProperty: List<KProperty<*>>,
-        isFirstRun: Boolean,
-    ) {
-        if (isFirstRun) {
-            provider.valueFromProperty(property)
-        } else {
-            run(provider, changeProperty)
-        }
-    }
 
-    private suspend fun run(provider: T, changeProperty: List<KProperty<*>>) {
-        val changedProperty = changeProperty.firstOrNull {
-            it == property || it.name == property.name
-        }
-        if (changedProperty != null) {
+    suspend fun run(provider: T, container: PropertyContainer): Boolean {
+        val delegateProperty = container.getDelegateProperty(property)
+        return if (delegateProperty != null) {
             run(provider)
-        }
+            container.removeDelegateProperty(delegateProperty)
+            true
+        } else false
 
     }
 
@@ -55,44 +48,87 @@ internal class PropertyAction<T : IStoreProvider, V>(
 
 }
 
+internal interface PropertyContainer : Disposable {
+
+
+    fun getDelegateProperty(property: KProperty<*>): KProperty<*>?
+
+    fun addProperty(property: KProperty<*>)
+
+    fun removeDelegateProperty(property: KProperty<*>)
+
+
+}
+
+internal class DefaultPropertyContainer(private val globalChangedProperties: LockList<KProperty<*>>) :
+    PropertyContainer {
+    var isInitialized = false
+
+    private val delegateProperties = LockList<KProperty<*>>()
+
+
+    override fun getDelegateProperty(property: KProperty<*>): KProperty<*>? {
+        return delegateProperties.doOnLock {
+            var result =
+                delegateProperties.firstOrNull { property == it || property.name == it.name }
+            if (!isInitialized && result == null) {
+                result =
+                    globalChangedProperties.firstOrNull { property == it || property.name == it.name }
+            }
+            result
+        }
+    }
+
+    override fun addProperty(property: KProperty<*>) {
+        delegateProperties.doOnLock {
+            delegateProperties.remove(property)
+            delegateProperties.add(property)
+        }
+    }
+
+    override fun removeDelegateProperty(property: KProperty<*>) {
+        delegateProperties.remove(property)
+    }
+
+    override fun dispose() {
+        delegateProperties.clear()
+    }
+
+}
+
 
 internal class AnchorScopeImpl<T : IStoreProvider>(
     private val storeProvider: T,
     private val flow: Flow<PropertyEvent>,
+    private val globalChangedProperties: LockList<KProperty<*>>,
     private val action: T.(AnchorScope<T>) -> Unit
 
-) : Disposable, AnchorScope<T>,AnchorScopeLifecycleHandler {
+) : Disposable, AnchorScope<T>, AnchorScopeLifecycleHandler {
+
+
     private var job: Job? = null
     private var isPause = true
     private val pauseChannel = Channel<Boolean>(1)
     private var isInitialized = false
-    private val changedProperties = arrayListOf<KProperty<*>>()
+    private val container = DefaultPropertyContainer(globalChangedProperties)
     private val changedChannel = Channel<Int>(1, BufferOverflow.DROP_OLDEST)
     private val actions = arrayListOf<PropertyAction<T, *>>()
     private var initAction: () -> Unit = {}
-    private val lock = ReentrantLock()
     private var count = 0
+
 
     override fun dispose() {
         job?.cancel()
-        changedProperties.clear()
+        container.dispose()
     }
 
     private fun pushProperty(property: KProperty<*>) {
-        lock.lock()
-        changedProperties.remove(property)
-        changedProperties.add(property)
-        lock.unlock()
-        changedChannel.trySend(count++)
+        container.addProperty(property)
+        if (!globalChangedProperties.contains(property)) {
+            globalChangedProperties.add(property)
+        }
     }
 
-    private fun getChangedPropertiesSnap(): List<KProperty<*>> {
-        lock.lock()
-        val result = changedProperties.toList()
-        changedProperties.clear()
-        lock.unlock()
-        return result
-    }
 
     override fun launch() {
         isInitialized = false
@@ -100,9 +136,9 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
         job = with(storeProvider) {
             coroutineScope.launch {
                 async(io) {
-                    changedChannel.trySend(count++)
                     flow.collect {
                         pushProperty(it.property)
+                        changedChannel.send(count++)
                     }
                 }.start()
                 async(io) {
@@ -110,6 +146,7 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
                         runAction()
                     }
                 }.start()
+                changedChannel.send(count++)
             }
 
         }
@@ -121,7 +158,6 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
             withContext(main) {
                 action(this@AnchorScopeImpl)
             }
-            val properties = getChangedPropertiesSnap()
             if (!isInitialized) {
                 withContext(main) {
                     initAction()
@@ -129,10 +165,11 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
                 initAction = {}
             }
             actions.map {
-                it.run(storeProvider, properties, !isInitialized)
+                it.run(this, container)
             }
             actions.clear()
             isInitialized = true
+            container.isInitialized = true
         }
     }
 
@@ -143,6 +180,9 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
     }
 
     override fun <V> stareAt(property: KProperty<V>, action: V.() -> Unit) {
+        with(storeProvider) {
+            valueFromProperty(property)
+        }
         actions.add(
             PropertyAction(
                 property,

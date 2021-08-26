@@ -8,6 +8,7 @@ import com.x930073498.rstore.core.IStoreProvider
 import com.x930073498.rstore.core.fromStore
 import com.x930073498.rstore.core.getInstance
 import com.x930073498.rstore.core.getOrCreate
+import com.x930073498.rstore.util.LockList
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -20,7 +21,7 @@ import kotlin.reflect.KProperty1
 private const val anchorPropertyEventChannelKey = "1306d9dd-5824-4341-af54-d45265fc2a1e"
 private const val anchorPropertyEventsFlowKey = "4dd1aea6-5f82-43be-bddd-d538b5961a38"
 private const val anchorStoreComponentKey = "87e64dd9-6d9b-415f-b10b-5bd04d04dbb3"
-
+private const val globalChangePropertiesKey="eb3dae31-ff93-43a4-aa8c-51492add1f01"
 internal data class PropertyEvent(
     val property: KProperty<*>,
 //    val equals: Equals<*>,
@@ -132,6 +133,11 @@ internal fun <T : IStoreProvider> T.registerAnchorPropertyChangedListenerImpl(
     starter: AnchorStarter = AnchorStarter,
     action: T.(AnchorScope<T>) -> Unit
 ): Disposable {
+    val globalChangeProperties = fromStore {
+        getOrCreate(globalChangePropertiesKey) {
+            LockList<KProperty<*>>()
+        }
+    }
 
     val componentKey = anchorStoreComponentKey + "code_${storeComponent.hashCode()}_$\$"
     val anchorScopeStore = fromStore {
@@ -144,14 +150,16 @@ internal fun <T : IStoreProvider> T.registerAnchorPropertyChangedListenerImpl(
             Channel<PropertyEvent>(Channel.UNLIMITED)
         }
     }
+
     val anchorPropertyEventFlow = fromStore {
         getOrCreate(anchorPropertyEventsFlowKey) {
             anchorPropertyEventChannel.receiveAsFlow()
+                .shareIn(coroutineScope, SharingStarted.Lazily)
         }
-    }.shareIn(coroutineScope, SharingStarted.Lazily)
+    }
     val id = UUID.randomUUID().toString()
     val scope =
-        AnchorScopeImpl(this, anchorPropertyEventFlow, action)
+        AnchorScopeImpl(this, anchorPropertyEventFlow, globalChangeProperties, action)
     coroutineScope.launch(main) {
         storeComponent.lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onDestroy(owner: LifecycleOwner) {
@@ -161,7 +169,7 @@ internal fun <T : IStoreProvider> T.registerAnchorPropertyChangedListenerImpl(
                 }
             }
         })
-        starter.start(scope+ Disposable {
+        starter.start(scope + Disposable {
             anchorScopeStore.remove(id)
         })
         anchorScopeStore.put(id, scope)

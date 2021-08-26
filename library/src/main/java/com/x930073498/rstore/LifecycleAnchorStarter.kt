@@ -4,7 +4,7 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 
 
-class LifecycleAnchorStarter(
+class LifecycleAnchorStarter constructor(
     private val lifecycleOwner: LifecycleOwner,
     private val option: Option = Option.ON_RESUME
 ) : AnchorStarter {

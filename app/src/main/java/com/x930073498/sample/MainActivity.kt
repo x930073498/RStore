@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import androidx.lifecycle.ViewModelProvider
+import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.x930073498.rstore.AnchorStarter
 import com.x930073498.rstore.LifecycleAnchorStarter
 import com.x930073498.rstore.StoreComponent
@@ -16,11 +17,16 @@ import kotlinx.coroutines.launch
 class MainActivity : AppCompatActivity(), StoreComponent {
     private val viewModel by lazy { ViewModelProvider(this).get(MainViewModel::class.java) }
 
+    private val adapter by lazy{
+        MainFragmentFragmentStateAdapter(supportFragmentManager,lifecycle)
+    }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.viewPager.adapter=adapter
         setState(binding)
     }
 
@@ -44,6 +50,7 @@ class MainActivity : AppCompatActivity(), StoreComponent {
 //                    }
                 }
                 stareAt(::data) {
+                    println("enter this line 897")
                     binding.data.text = "data=${data.value}"
                 }
                 stareAt(::list) {
