@@ -3,6 +3,7 @@ package com.x930073498.rstore
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import com.x930073498.rstore.core.IStoreProvider
+import com.x930073498.rstore.property.*
 import com.x930073498.rstore.property.NotifyPropertyDelegate
 import com.x930073498.rstore.property.checker.ParamsChecker
 import com.x930073498.rstore.property.equals.ListEquals
@@ -20,12 +21,16 @@ import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
 
+suspend fun <T : IStoreProvider, V> T.awaitUntil(
+    property: KProperty<V>,
+    predicate: suspend V.() -> Boolean
+) = awaitUntilImpl(property, predicate)
+
 fun <T : IStoreProvider, V> T.registerPropertyChangedListener(
     property: KProperty<V>,
     lifecycleOwner: LifecycleOwner,
     action: V.() -> Unit
 ) = registerPropertyChangedListenerImpl(property, lifecycleOwner, action)
-
 
 
 fun <T : IStoreProvider> T.registerAnchorPropertyChangedListener(

@@ -10,7 +10,10 @@ import com.x930073498.rstore.core.getOrCreate
 import com.x930073498.rstore.property.PropertyEvent
 import com.x930073498.rstore.property.invokeAction
 import com.x930073498.rstore.property.valueFromProperty
+import com.x930073498.rstore.util.AwaitState
+import com.x930073498.rstore.util.HeartBeat
 import com.x930073498.rstore.util.LockList
+import com.x930073498.rstore.util.awaitState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.BufferOverflow
@@ -62,7 +65,6 @@ internal class DefaultPropertyContainer(private val globalChangedProperties: Loc
 
     override fun getDelegateProperty(property: KProperty<*>): KProperty<*>? {
         return delegateProperties.doOnLock {
-            println("enter this line $this")
             var result =
                 delegateProperties.firstOrNull { property == it || property.name == it.name }
             if (!isInitialized && result == null) {
@@ -98,16 +100,13 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
     private val action: T.(AnchorScope<T>) -> Unit
 
 ) : Disposable, AnchorScope<T>, AnchorScopeLifecycleHandler {
-
     private var job: Job? = null
-    private var isPause = true
-    private val pauseChannel = Channel<Boolean>(1)
+    private val resumeAwaitState = AwaitState.create(false)
     private var isInitialized = false
     private val container = DefaultPropertyContainer(globalChangedProperties)
-    private val changedChannel = Channel<Int>(1, BufferOverflow.DROP_OLDEST)
+    private val changedHeartBeat = HeartBeat.create()
     private val actions = arrayListOf<PropertyAction<T, *>>()
     private var initAction: () -> Unit = {}
-    private var count = 0
 
 
     override fun dispose() {
@@ -131,15 +130,15 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
                 async(io) {
                     flow.collect {
                         pushProperty(it.property)
-                        changedChannel.send(count++)
+                        changedHeartBeat.beat()
                     }
                 }.start()
                 async(io) {
-                    for (value in changedChannel) {
+                    changedHeartBeat.onBeat {
                         runAction()
                     }
                 }.start()
-                changedChannel.send(count++)
+                changedHeartBeat.beat()
             }
 
         }
@@ -148,18 +147,18 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
     private suspend fun AnchorScopeImpl<T>.runAction() {
         with(storeProvider) {
             withContext(main) {
-                awaitNotPause()
+                resumeAwaitState.awaitState(true)
                 action(this@AnchorScopeImpl)
             }
             if (!isInitialized) {
                 withContext(main) {
-                    awaitNotPause()
+                    resumeAwaitState.awaitState(true)
                     initAction()
                 }
                 initAction = {}
             }
             actions.forEach {
-                awaitNotPause()
+                resumeAwaitState.awaitState(true)
                 it.run(this, container)
             }
             actions.clear()
@@ -186,26 +185,13 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
         )
     }
 
-    private suspend fun awaitNotPause() {
-        if (!isPause) return
-        while (select {
-                pauseChannel.onReceive {
-                    it
-                }
-            }) {
-            //do Loop
-        }
-    }
-
 
     override fun resume() {
-        isPause = false
-        pauseChannel.trySend(false)
+        resumeAwaitState.setState(true)
     }
 
     override fun pause() {
-        isPause = true
-        pauseChannel.trySend(true)
+        resumeAwaitState.setState(false)
 
     }
 }

@@ -1,14 +1,13 @@
 package com.x930073498.rstore.property
 
 import androidx.lifecycle.*
-import androidx.lifecycle.Observer
 import com.x930073498.rstore.*
 import com.x930073498.rstore.anchor.AnchorScopeImpl
-import com.x930073498.rstore.core.IStoreProvider
-import com.x930073498.rstore.core.fromStore
-import com.x930073498.rstore.core.getInstance
-import com.x930073498.rstore.core.getOrCreate
+import com.x930073498.rstore.core.*
+import com.x930073498.rstore.util.AwaitState
+import com.x930073498.rstore.util.HeartBeat
 import com.x930073498.rstore.util.LockList
+import com.x930073498.rstore.util.awaitState
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -54,31 +53,26 @@ internal fun <T : IStoreProvider, V> T.invokeAction(
 }
 
 internal fun IStoreProvider.notifyPropertyChanged(property: KProperty<*>) {
-    val flow = fromStore {
-        getInstance<MutableStateFlow<PropertyEvent>>(dataPropertyKey(property))
+    val heartBeat = fromStore {
+        getInstance<HeartBeat>(dataPropertyKey(property))
     } ?: return
-    flow.tryEmit(property.asEvent())
+    heartBeat.beat()
 }
 
 
-suspend fun <T : IStoreProvider, V> T.awaitUntil(
+internal suspend fun <T : IStoreProvider, V> T.awaitUntilImpl(
     property: KProperty<V>,
     predicate: suspend V.() -> Boolean
 ) {
-    val flow = fromStore {
+    val heartBeat = fromStore {
         getOrCreate(dataPropertyKey(property)) {
-            MutableStateFlow(property.asEvent())
+            HeartBeat.create()
         }
     }
-    flow.filter {
-        val value: V = if (property is KProperty0) {
-            property.invoke()
-        } else {
-            property as KProperty1<T, V>
-            property.invoke(this)
-        }
-        predicate.invoke(value)
-    }.first()
+    heartBeat.onBeat {
+        val value = valueFromProperty(property) as V
+        if (predicate.invoke(value)) dispose()
+    }
 
 }
 
@@ -87,22 +81,30 @@ internal fun <T : IStoreProvider, V> T.registerPropertyChangedListenerImpl(
     lifecycleOwner: LifecycleOwner,
     action: V.() -> Unit
 ): Disposable {
-    val flow = fromStore {
+    val heartBeat = fromStore {
         getOrCreate(dataPropertyKey(property)) {
-            MutableStateFlow(property.asEvent())
+            HeartBeat.create()
         }
     }
-
-    val liveData = flow.asLiveData(main)
-    val observer = Observer<Any?> {
-        invokeAction(property, action)
-    }
+    val resumeAwait = AwaitState.create(false)
     val job = coroutineScope.launch(main) {
-        liveData.observe(lifecycleOwner, observer)
+        lifecycleOwner.lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onPause(owner: LifecycleOwner) {
+                resumeAwait.setState(false)
+            }
+
+            override fun onResume(owner: LifecycleOwner) {
+                resumeAwait.setState(true)
+            }
+        })
+        heartBeat.onBeat {
+            resumeAwait.awaitState(true)
+            invokeAction(property, action)
+        }
+
     }
     return Disposable {
         job.cancel()
-        liveData.removeObserver(observer)
     }
 }
 

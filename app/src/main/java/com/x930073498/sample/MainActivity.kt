@@ -1,11 +1,11 @@
 package com.x930073498.sample
 
 import android.annotation.SuppressLint
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
-import androidx.viewpager2.adapter.FragmentStateAdapter
+import androidx.lifecycle.lifecycleScope
 import com.x930073498.rstore.*
 import com.x930073498.sample.databinding.ActivityMainBinding
 import kotlinx.coroutines.launch
@@ -31,7 +31,7 @@ class MainActivity : AppCompatActivity(), StoreComponent {
     private fun setState(binding: ActivityMainBinding) {
         with(viewModel) {
             withProperty(::count) {
-                Toast.makeText(this@MainActivity, "count=$this", Toast.LENGTH_SHORT).show()
+
             }
             withAnchor(starter = LifecycleAnchorStarter()) {
                 with(it) {
@@ -40,6 +40,14 @@ class MainActivity : AppCompatActivity(), StoreComponent {
                     }
                 }
             }
+        }
+        lifecycleScope.launch {
+            with(viewModel) {
+                awaitUntil(::data) {
+                    value > 5
+                }
+            }
+            Toast.makeText(this@MainActivity, "data 数值大于5", Toast.LENGTH_SHORT).show()
         }
 
         withAnchor(viewModel) { scope ->
