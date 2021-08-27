@@ -129,5 +129,4 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
         manager.pushEventAction(eventAction)
     }
 
-
 }

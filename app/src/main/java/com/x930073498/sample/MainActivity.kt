@@ -44,6 +44,9 @@ class MainActivity : AppCompatActivity(), StoreComponent {
                     println("data=${data.value}")
                     binding.data.text="data=${data.value}"
                 }
+                stareAt(::list){
+                    println("enter this line list=$this")
+                }
             }
         }
         lifecycleScope.launch {
