@@ -31,7 +31,7 @@ class MutLiveDataFactory<T : IStoreProvider, Data>(private val defaultValue: Dat
         process: DelegateProcess<T, Data, MutableLiveData<Data>>,
         data: Data?
     ): MutableLiveData<Data> {
-        var pre: Data? = null
+        var pre: Data? = data
         val liveData = ObservableLiveData<Data>()
         liveData.apply {
             action = {
@@ -41,7 +41,6 @@ class MutLiveDataFactory<T : IStoreProvider, Data>(private val defaultValue: Dat
                         notify(property, process, pre, this@apply)
                     }
                 }
-
             }
             if (data != null) {
                 postValue(data)

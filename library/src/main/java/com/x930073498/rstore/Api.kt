@@ -22,27 +22,16 @@ import kotlin.reflect.KProperty
 
 fun <T : IStoreProvider, V> T.registerPropertyChangedListener(
     property: KProperty<V>,
-    lifecycleOwner: LifecycleOwner? = null,
+    lifecycleOwner: LifecycleOwner,
     action: V.() -> Unit
 ) = registerPropertyChangedListenerImpl(property, lifecycleOwner, action)
 
-fun <T : IStoreProvider> T.registerAnchorPropertyChangedListener(
-    storeComponent: StoreComponent,
-    lifecycleOwner: LifecycleOwner = storeComponent,
-    option: LifecycleAnchorStarter.Option = LifecycleAnchorStarter.Option.ON_RESUME,
-    action: T.(AnchorScope<T>) -> Unit
-) = registerAnchorPropertyChangedListener(
-    storeComponent,
-    LifecycleAnchorStarter(lifecycleOwner, option),
-    action
-)
+
 
 fun <T : IStoreProvider> T.registerAnchorPropertyChangedListener(
-    storeComponent: StoreComponent,
     starter: AnchorStarter = AnchorStarter,
     action: T.(AnchorScope<T>) -> Unit
 ) = registerAnchorPropertyChangedListenerImpl(
-    storeComponent,
     starter,
     action
 )
@@ -215,22 +204,13 @@ fun <V> IStoreProvider.listProperty(
 
 fun <T : IStoreProvider> StoreComponent.withAnchor(
     provider: T,
-    lifecycleOwner: LifecycleOwner = defaultLifecycleOwner,
-    option: LifecycleAnchorStarter.Option = LifecycleAnchorStarter.Option.ON_RESUME,
-    action: T.(AnchorScope<T>) -> Unit
-) {
-    provider.registerAnchorPropertyChangedListener(this, lifecycleOwner, option, action)
-}
-
-fun <T : IStoreProvider> StoreComponent.withAnchor(
-    provider: T,
     starter: AnchorStarter = LifecycleAnchorStarter(
         defaultLifecycleOwner,
-        LifecycleAnchorStarter.Option.ON_RESUME
+        false
     ),
     action: T.(AnchorScope<T>) -> Unit
 ) {
-    provider.registerAnchorPropertyChangedListener(this, starter, action)
+    provider.registerAnchorPropertyChangedListener(starter, action)
 }
 
 fun <T : IStoreProvider, V> StoreComponent.withProperty(

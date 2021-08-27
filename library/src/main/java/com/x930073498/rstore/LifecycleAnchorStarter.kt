@@ -6,17 +6,17 @@ import androidx.lifecycle.LifecycleOwner
 
 class LifecycleAnchorStarter constructor(
     private val lifecycleOwner: LifecycleOwner,
-    private val option: Option = Option.ON_RESUME
+    private val onCreateResume: () -> Boolean = { false }
 ) : AnchorStarter {
-    enum class Option {
-        ON_CREATE, ON_RESUME
-    }
+
+    constructor(lifecycleOwner: LifecycleOwner, onCreateResume: Boolean) : this(lifecycleOwner,
+        { onCreateResume })
 
     override fun start(handler: AnchorScopeLifecycleHandler) {
         lifecycleOwner.lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onCreate(owner: LifecycleOwner) {
                 handler.launch()
-                if (option == Option.ON_CREATE) {
+                if (onCreateResume()) {
                     handler.resume()
                 }
             }

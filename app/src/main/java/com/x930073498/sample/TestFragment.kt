@@ -27,10 +27,7 @@ class TestFragment : Fragment(R.layout.fragment_test), StoreComponent {
         val viewBinding = FragmentTestBinding.bind(view)
         withAnchor(
             viewModel,
-            starter = LifecycleAnchorStarter(
-                viewLifecycleOwner,
-                if (viewModel.data.value > 0) LifecycleAnchorStarter.Option.ON_CREATE else LifecycleAnchorStarter.Option.ON_RESUME
-            )
+            starter = LifecycleAnchorStarter(viewModel.data.value > 0)
         ) {
 
             with(it) {
@@ -40,7 +37,6 @@ class TestFragment : Fragment(R.layout.fragment_test), StoreComponent {
                     }
                 }
                 stareAt(::data) {
-                    println("enter this line 714")
                     viewBinding.data.text = "data $position =${data.value}"
                 }
             }

@@ -62,6 +62,7 @@ internal class DefaultPropertyContainer(private val globalChangedProperties: Loc
 
     override fun getDelegateProperty(property: KProperty<*>): KProperty<*>? {
         return delegateProperties.doOnLock {
+            println("enter this line $this")
             var result =
                 delegateProperties.firstOrNull { property == it || property.name == it.name }
             if (!isInitialized && result == null) {
@@ -97,7 +98,6 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
     private val action: T.(AnchorScope<T>) -> Unit
 
 ) : Disposable, AnchorScope<T>, AnchorScopeLifecycleHandler {
-
 
     private var job: Job? = null
     private var isPause = true
@@ -147,17 +147,19 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
 
     private suspend fun AnchorScopeImpl<T>.runAction() {
         with(storeProvider) {
-            awaitNotPause()
             withContext(main) {
+                awaitNotPause()
                 action(this@AnchorScopeImpl)
             }
             if (!isInitialized) {
                 withContext(main) {
+                    awaitNotPause()
                     initAction()
                 }
                 initAction = {}
             }
-            actions.map {
+            actions.forEach {
+                awaitNotPause()
                 it.run(this, container)
             }
             actions.clear()

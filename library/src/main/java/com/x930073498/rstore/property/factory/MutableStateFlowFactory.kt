@@ -4,6 +4,7 @@ import androidx.lifecycle.MutableLiveData
 import com.x930073498.rstore.core.IStoreProvider
 import com.x930073498.rstore.property.DelegateProcess
 import com.x930073498.rstore.property.SourceFactory
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -17,8 +18,8 @@ class MutableStateFlowFactory<T : IStoreProvider, Data>(private val defaultValue
         process: DelegateProcess<T, Data, MutableStateFlow<Data>>,
         data: Data?
     ): MutableStateFlow<Data> {
-        var pre = data
-        return MutableStateFlow(data ?: defaultValue).apply {
+        var pre = data?:defaultValue
+        return MutableStateFlow(pre).apply {
             coroutineScope.launch(io) {
                 collect {
                     if (!process.equals(pre, it)) {

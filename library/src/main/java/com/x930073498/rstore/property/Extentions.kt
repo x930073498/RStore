@@ -20,7 +20,6 @@ import kotlin.reflect.KProperty1
 
 private const val anchorPropertyEventChannelKey = "1306d9dd-5824-4341-af54-d45265fc2a1e"
 private const val anchorPropertyEventsFlowKey = "4dd1aea6-5f82-43be-bddd-d538b5961a38"
-private const val anchorStoreComponentKey = "87e64dd9-6d9b-415f-b10b-5bd04d04dbb3"
 private const val globalChangePropertiesKey = "eb3dae31-ff93-43a4-aa8c-51492add1f01"
 
 internal data class PropertyEvent(
@@ -85,7 +84,7 @@ suspend fun <T : IStoreProvider, V> T.awaitUntil(
 
 internal fun <T : IStoreProvider, V> T.registerPropertyChangedListenerImpl(
     property: KProperty<V>,
-    lifecycleOwner: LifecycleOwner? = null,
+    lifecycleOwner: LifecycleOwner,
     action: V.() -> Unit
 ): Disposable {
     val flow = fromStore {
@@ -94,27 +93,16 @@ internal fun <T : IStoreProvider, V> T.registerPropertyChangedListenerImpl(
         }
     }
 
-    if (lifecycleOwner == null) {
-        val job = coroutineScope.launch(main) {
-            flow.collect {
-                invokeAction(property, action)
-            }
-        }
-        return Disposable {
-            job.cancel()
-        }
-    } else {
-        val liveData = flow.asLiveData(main)
-        val observer = Observer<Any?> {
-            invokeAction(property, action)
-        }
-        val job = coroutineScope.launch(main) {
-            liveData.observe(lifecycleOwner, observer)
-        }
-        return Disposable {
-            job.cancel()
-            liveData.removeObserver(observer)
-        }
+    val liveData = flow.asLiveData(main)
+    val observer = Observer<Any?> {
+        invokeAction(property, action)
+    }
+    val job = coroutineScope.launch(main) {
+        liveData.observe(lifecycleOwner, observer)
+    }
+    return Disposable {
+        job.cancel()
+        liveData.removeObserver(observer)
     }
 }
 
@@ -130,7 +118,6 @@ internal fun IStoreProvider.notifyAnchorPropertyChanged(
 }
 
 internal fun <T : IStoreProvider> T.registerAnchorPropertyChangedListenerImpl(
-    storeComponent: StoreComponent,
     starter: AnchorStarter = AnchorStarter,
     action: T.(AnchorScope<T>) -> Unit
 ): Disposable {

@@ -12,13 +12,7 @@ internal class InstanceFactory<T : IStoreProvider, Source>(private val defaultVa
         process: DelegateProcess<T, Source, Source>,
         data: Source?
     ): Source {
-        val result = data ?: defaultValue
-        with(process) {
-            with(notifier) {
-                notify(property, process, result, result)
-            }
-        }
-        return result
+        return data ?: defaultValue
     }
 
     override fun T.transform(
