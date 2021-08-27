@@ -3,7 +3,7 @@ package com.x930073498.rstore.event
 import com.x930073498.rstore.core.Disposable
 import com.x930073498.rstore.core.IStoreProvider
 
-internal class EventActionManager<S : IStoreProvider, T>(private val provider: S):Disposable {
+internal class EventActionManager<S : IStoreProvider, T>(private val provider: S) : Disposable {
     private var isBegan = false
     private val actions = arrayListOf<EventAction<S, T>>()
 
@@ -23,10 +23,7 @@ internal class EventActionManager<S : IStoreProvider, T>(private val provider: S
         with(provider) {
             actions.forEach {
                 with(it) {
-                    init(data)
-                    if (enable(data)) {
-                        process(data)
-                    }
+                    process(data)
                 }
             }
         }
@@ -38,7 +35,7 @@ internal class EventActionManager<S : IStoreProvider, T>(private val provider: S
     }
 
     override fun dispose() {
-        isBegan=false
+        isBegan = false
         actions.clear()
     }
 

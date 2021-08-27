@@ -6,4 +6,4 @@ data class AnchorScopeState(
     var isInitialized: Boolean,
     val container: PropertyContainer
 )
-typealias AnchorStateEventAction<T> = EventAction<T, AnchorScopeState>
+typealias  AnchorStateEventAction<T> = EventAction<T, AnchorScopeState>

@@ -5,10 +5,11 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.single
 import kotlinx.coroutines.selects.select
 
-interface AwaitState<T>  {
+interface AwaitState<T> {
 
 
     companion object {
@@ -39,10 +40,8 @@ private class AwaitStateImpl<T>(defaultState: T) : AwaitState<T> {
 
     override suspend fun awaitState(predicate: T.() -> Boolean) {
         if (predicate(flow.value)) return
-        flow.filter { predicate(it) }.single()
+        flow.first { predicate(it) }
     }
-
-
 
 
 }

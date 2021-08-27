@@ -109,10 +109,8 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
                 action(this@AnchorScopeImpl, this@with)
             }
             manager.end()
-            withContext(main) {
-                resumeAwaitState.awaitState(true)
-                manager.runAction(state)
-            }
+            resumeAwaitState.awaitState(true)
+            manager.runAction(state)
             state.isInitialized = true
             container.isInitialized = true
         }
