@@ -1,10 +1,6 @@
 package com.x930073498.rstore.core
 
-import android.os.Parcelable
-import com.x930073498.rstore.Disposable
-import com.x930073498.rstore.MapStore
 import kotlinx.coroutines.CoroutineScope
-import java.io.Closeable
 import kotlin.coroutines.CoroutineContext
 
 
@@ -23,7 +19,7 @@ interface ISaveStateStoreProvider {
 }
 
 
-interface ISaveStateStore :Disposable{
+interface ISaveStateStore : Disposable {
     val id:String
     fun remove(key: String)
 

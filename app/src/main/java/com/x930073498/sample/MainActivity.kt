@@ -7,6 +7,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.x930073498.rstore.*
+import com.x930073498.rstore.core.LifecycleAnchorStarter
+import com.x930073498.rstore.core.StoreComponent
+import com.x930073498.rstore.core.onInitialized
+import com.x930073498.rstore.core.stareAt
 import com.x930073498.sample.databinding.ActivityMainBinding
 import kotlinx.coroutines.launch
 
@@ -30,14 +34,15 @@ class MainActivity : AppCompatActivity(), StoreComponent {
 
     private fun setState(binding: ActivityMainBinding) {
         with(viewModel) {
-            withProperty(::count) {
-
-            }
             withAnchor(starter = LifecycleAnchorStarter()) {
-                with(it) {
-                    stareAt(::data) {
-                        println("data=${data.value}")
+                onInitialized {
+                    binding.root.setOnClickListener {
+                        data.tryEmit(++count)
                     }
+                }
+                stareAt(::data) {
+                    println("data=${data.value}")
+                    binding.data.text="data=${data.value}"
                 }
             }
         }
@@ -50,20 +55,5 @@ class MainActivity : AppCompatActivity(), StoreComponent {
             Toast.makeText(this@MainActivity, "data 数值大于5", Toast.LENGTH_SHORT).show()
         }
 
-        withAnchor(viewModel) { scope ->
-            with(scope) {
-                onInitialized {
-                    binding.root.setOnClickListener {
-                        data.tryEmit(++count)
-                    }
-                }
-                stareAt(::data) {
-                    binding.data.text = "data=${data.value}"
-                }
-                stareAt(::list) {
-                    println(this)
-                }
-            }
-        }
     }
 }

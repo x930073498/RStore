@@ -1,6 +1,6 @@
 package com.x930073498.rstore.property.equals
 
-import com.x930073498.rstore.Equals
+import com.x930073498.rstore.core.Equals
 import com.x930073498.rstore.core.IStoreProvider
 import com.x930073498.rstore.property.DelegateProcess
 import kotlin.reflect.KProperty

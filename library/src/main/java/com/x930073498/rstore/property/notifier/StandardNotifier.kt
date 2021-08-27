@@ -1,12 +1,9 @@
 package com.x930073498.rstore.property.notifier
 
-import com.x930073498.rstore.core.ISaveStateStoreProvider
 import com.x930073498.rstore.core.IStoreProvider
-import com.x930073498.rstore.core.saveState
+import com.x930073498.rstore.internal.notifyAnchorPropertyChanged
+import com.x930073498.rstore.internal.notifyPropertyChanged
 import com.x930073498.rstore.property.*
-import com.x930073498.rstore.property.dataSaveStateKey
-import com.x930073498.rstore.property.equals.TransformEquals
-import com.x930073498.rstore.property.notifyPropertyChanged
 import kotlin.reflect.KProperty
 
 internal class StandardNotifier<T : IStoreProvider, Data, Source> :

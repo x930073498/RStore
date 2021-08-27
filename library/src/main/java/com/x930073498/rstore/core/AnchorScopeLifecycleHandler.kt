@@ -1,4 +1,4 @@
-package com.x930073498.rstore
+package com.x930073498.rstore.core
 
 interface AnchorScopeLifecycleHandler : Disposable {
     fun launch()

@@ -1,12 +1,12 @@
 package com.x930073498.rstore.property
 
-import com.x930073498.rstore.Equals
+import com.x930073498.rstore.core.Equals
 import com.x930073498.rstore.core.ISaveStateStoreProvider
 import com.x930073498.rstore.core.IStoreProvider
 import com.x930073498.rstore.core.fromSaveStateStore
-import com.x930073498.rstore.core.fromStore
 import com.x930073498.rstore.core.getSavedState
 import com.x930073498.rstore.core.saveState
+import com.x930073498.rstore.internal.dataSaveStateKey
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 

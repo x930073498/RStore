@@ -1,9 +1,10 @@
 package com.x930073498.rstore
 
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
+import com.x930073498.rstore.core.DefaultEquals
+import com.x930073498.rstore.core.Equals
 import com.x930073498.rstore.core.IStoreProvider
-import com.x930073498.rstore.property.*
+import com.x930073498.rstore.core.IStoreProviderComponent
 import com.x930073498.rstore.property.NotifyPropertyDelegate
 import com.x930073498.rstore.property.checker.ParamsChecker
 import com.x930073498.rstore.property.equals.ListEquals
@@ -12,34 +13,9 @@ import com.x930073498.rstore.property.factory.MutLiveDataFactory
 import com.x930073498.rstore.property.factory.MutableStateFlowFactory
 import com.x930073498.rstore.property.initializer.EmptyInitializer
 import com.x930073498.rstore.property.notifier.StandardNotifier
-import com.x930073498.rstore.property.registerAnchorPropertyChangedListenerImpl
-import com.x930073498.rstore.property.registerPropertyChangedListenerImpl
-import com.x930073498.rstore.property.stareAtImpl
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.properties.ReadOnlyProperty
 import kotlin.properties.ReadWriteProperty
-import kotlin.reflect.KProperty
-
-
-suspend fun <T : IStoreProvider, V> T.awaitUntil(
-    property: KProperty<V>,
-    predicate: suspend V.() -> Boolean
-) = awaitUntilImpl(property, predicate)
-
-fun <T : IStoreProvider, V> T.registerPropertyChangedListener(
-    property: KProperty<V>,
-    lifecycleOwner: LifecycleOwner,
-    action: V.() -> Unit
-) = registerPropertyChangedListenerImpl(property, lifecycleOwner, action)
-
-
-fun <T : IStoreProvider> T.registerAnchorPropertyChangedListener(
-    starter: AnchorStarter = AnchorStarter,
-    action: T.(AnchorScope<T>) -> Unit
-) = registerAnchorPropertyChangedListenerImpl(
-    starter,
-    action
-)
 
 
 fun <V> IStoreProviderComponent.property(
@@ -206,28 +182,3 @@ fun <V> IStoreProvider.listProperty(
 ): ReadWriteProperty<IStoreProvider, List<V>> =
     property(emptyList(), isAnchorProperty, ListEquals(equals))
 
-
-fun <T : IStoreProvider> StoreComponent.withAnchor(
-    provider: T,
-    starter: AnchorStarter = LifecycleAnchorStarter(
-        defaultLifecycleOwner,
-        false
-    ),
-    action: T.(AnchorScope<T>) -> Unit
-) {
-    provider.registerAnchorPropertyChangedListener(starter, action)
-}
-
-fun <T : IStoreProvider, V> StoreComponent.withProperty(
-    provider: T,
-    property: KProperty<V>,
-    lifecycleOwner: LifecycleOwner = defaultLifecycleOwner,
-    action: V.() -> Unit
-) {
-    provider.registerPropertyChangedListener(property, lifecycleOwner, action)
-}
-
-fun <T : IStoreProvider> AnchorScope<T>.stareAt(
-    vararg property: KProperty<*>,
-    action: () -> Unit
-) = stareAtImpl(property = property, action)

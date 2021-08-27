@@ -1,6 +1,6 @@
 package com.x930073498.rstore.util
 
-import com.x930073498.rstore.Disposable
+import com.x930073498.rstore.core.Disposable
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
 import java.util.concurrent.atomic.AtomicInteger

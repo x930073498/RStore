@@ -1,6 +1,7 @@
-package com.x930073498.rstore.property
+package com.x930073498.rstore.internal
 
 import androidx.lifecycle.*
+import androidx.savedstate.SavedStateRegistryOwner
 import com.x930073498.rstore.*
 import com.x930073498.rstore.anchor.AnchorScopeImpl
 import com.x930073498.rstore.core.*
@@ -20,6 +21,8 @@ import kotlin.reflect.KProperty1
 private const val anchorPropertyEventChannelKey = "1306d9dd-5824-4341-af54-d45265fc2a1e"
 private const val anchorPropertyEventsFlowKey = "4dd1aea6-5f82-43be-bddd-d538b5961a38"
 private const val globalChangePropertiesKey = "eb3dae31-ff93-43a4-aa8c-51492add1f01"
+
+
 
 internal data class PropertyEvent(
     val property: KProperty<*>,
@@ -43,6 +46,10 @@ internal fun <T : IStoreProvider, V> T.valueFromProperty(kProperty: KProperty<V>
             else -> null
         }
     }
+}
+
+internal fun IStoreProvider.setSavedStateRegistryOwner(owner: SavedStateRegistryOwner) {
+
 }
 
 internal fun <T : IStoreProvider, V> T.invokeAction(
@@ -121,7 +128,7 @@ internal fun IStoreProvider.notifyAnchorPropertyChanged(
 
 internal fun <T : IStoreProvider> T.registerAnchorPropertyChangedListenerImpl(
     starter: AnchorStarter = AnchorStarter,
-    action: T.(AnchorScope<T>) -> Unit
+    action: AnchorScope<T>.(T) -> Unit
 ): Disposable {
     val globalChangeProperties = fromStore {
         getOrCreate(globalChangePropertiesKey) {
@@ -166,7 +173,7 @@ internal fun <T : IStoreProvider> AnchorScope<T>.stareAtImpl(
     vararg property: KProperty<*>,
     action: () -> Unit
 ) {
-    property.forEach { stareAt(it) { action() } }
+    property.forEach { stareAt<T,Any?>(it) { action() } }
 }
 
 internal operator fun AnchorScopeLifecycleHandler.plus(disposable: Disposable): AnchorScopeLifecycleHandler {

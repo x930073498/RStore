@@ -1,10 +1,14 @@
 package com.x930073498.rstore.util
 
+import com.x930073498.rstore.core.Disposable
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.single
 import kotlinx.coroutines.selects.select
 
-interface AwaitState<T> {
+interface AwaitState<T>  {
 
 
     companion object {
@@ -12,7 +16,6 @@ interface AwaitState<T> {
             return AwaitStateImpl(defaultState)
         }
     }
-
 
     fun setState(state: T)
 
@@ -28,24 +31,18 @@ suspend fun <T> AwaitState<T>.awaitState(state: T) {
 }
 
 private class AwaitStateImpl<T>(defaultState: T) : AwaitState<T> {
-    private val channel = Channel<T>(1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
-    private var currentState: T = defaultState
+    private val flow = MutableStateFlow(defaultState)
+
     override fun setState(state: T) {
-        currentState = state
-        channel.trySend(state)
+        flow.tryEmit(state)
     }
 
     override suspend fun awaitState(predicate: T.() -> Boolean) {
-        if (predicate(currentState)) return
-        while (select {
-                channel.onReceive {
-                    !predicate(it)
-                }
-            }) {
-            // do loop
-        }
-
+        if (predicate(flow.value)) return
+        flow.filter { predicate(it) }.single()
     }
+
+
 
 
 }

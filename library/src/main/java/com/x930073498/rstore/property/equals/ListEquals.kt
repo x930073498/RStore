@@ -1,7 +1,6 @@
 package com.x930073498.rstore.property.equals
 
-import com.x930073498.rstore.Equals
-import kotlinx.coroutines.flow.MutableStateFlow
+import com.x930073498.rstore.core.Equals
 
 class ListEquals<V, T : List<V>>(private val equals: Equals<V>) : Equals<T> {
     override fun equals(data1: T?, data2: T?): Boolean {
