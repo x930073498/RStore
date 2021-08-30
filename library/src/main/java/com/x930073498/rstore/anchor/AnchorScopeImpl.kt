@@ -43,7 +43,7 @@ internal class DefaultPropertyContainer(private val globalChangedProperties: Loc
     }
 
     override fun removeDelegateProperty(property: KProperty<*>) {
-        delegateProperties.remove(property)
+        delegateProperties.removeAll { property == it || property.name == it.name }
     }
 
     override fun dispose() {
@@ -63,8 +63,8 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
     private val resumeAwaitState = AwaitState.create(false)
     private val manager = EventActionManager<T, AnchorScopeState>(storeProvider)
     private val container = DefaultPropertyContainer(globalChangedProperties)
-    private val state = AnchorScopeState(false, container)
     private val changedHeartBeat = HeartBeat.create()
+    private val state = AnchorScopeState(false, container, resumeAwaitState)
 
     override fun dispose() {
         container.dispose()

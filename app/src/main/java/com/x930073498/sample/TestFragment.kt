@@ -21,7 +21,6 @@ class TestFragment : Fragment(R.layout.fragment_test), StoreComponent {
         position = arguments?.getInt("position", position) ?: 0
     }
 
-
     @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)

@@ -33,18 +33,19 @@ class MainActivity : AppCompatActivity(), StoreComponent {
     }
 
     private fun setState(binding: ActivityMainBinding) {
+
         with(viewModel) {
             withAnchor(starter = LifecycleAnchorStarter()) {
                 onInitialized {
                     binding.root.setOnClickListener {
-                        data.tryEmit(++count)
+                        ++count
                     }
                 }
-                stareAt(::data) {
-                    println("data=${data.value}")
-                    binding.data.text="data=${data.value}"
+                stareAt(::countOb) {
+                    println("enter this line countOb=$this")
+                    binding.data.text = "data=$this"
                 }
-                stareAt(::list){
+                stareAt(::list) {
                     println("enter this line list=$this")
                 }
             }

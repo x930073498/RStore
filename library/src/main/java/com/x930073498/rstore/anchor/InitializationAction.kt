@@ -9,7 +9,6 @@ internal class InitializationAction<T : IStoreProvider>(
     private val action: suspend () -> Unit = {}
 ) : AnchorStateEventAction<T> {
 
-
     override suspend fun T.process(data: AnchorScopeState) {
         if (data.isInitialized) return
         withContext(main) {

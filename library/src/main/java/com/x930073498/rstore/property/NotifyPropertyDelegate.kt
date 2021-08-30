@@ -18,15 +18,17 @@ internal class NotifyPropertyDelegate<T : IStoreProvider, Data, Source>(
     checker: StateChecker<T, Data, Source>,
     equals: Equals<Data>
 ) :
-    ReadWriteProperty<T, Source> {
+    ReadWriteProperty<T, Source>{
     private val environment =
         DelegateProcess(
             factory,
             initializer,
             notifier + ChangeNotifier { property, _, data, _ -> saveState(property, data) },
             checker,
+            this,
             equals
         )
+
 
     private var value: Source? = null
 
@@ -93,7 +95,7 @@ internal class NotifyPropertyDelegate<T : IStoreProvider, Data, Source>(
         if (provider !is ISaveStateStoreProvider) return
         if (!shouldSaveState(property)) return
         provider.fromSaveStateStore {
-            saveState(dataSaveStateKey(id,property),data)
+            saveState(dataSaveStateKey(id, property), data)
         }
     }
 
@@ -101,7 +103,7 @@ internal class NotifyPropertyDelegate<T : IStoreProvider, Data, Source>(
         if (provider !is ISaveStateStoreProvider) return null
         if (!shouldSaveState(property)) return null
         return provider.fromSaveStateStore {
-            getSavedState(dataSaveStateKey(id,property))
+            getSavedState(dataSaveStateKey(id, property))
         }
     }
 
@@ -138,4 +140,6 @@ internal class NotifyPropertyDelegate<T : IStoreProvider, Data, Source>(
             }
         }
     }
+
+
 }

@@ -11,11 +11,13 @@ import com.x930073498.rstore.property.equals.ListEquals
 import com.x930073498.rstore.property.factory.InstanceFactory
 import com.x930073498.rstore.property.factory.MutLiveDataFactory
 import com.x930073498.rstore.property.factory.MutableStateFlowFactory
+import com.x930073498.rstore.property.factory.TargetPropertyFactory
 import com.x930073498.rstore.property.initializer.EmptyInitializer
 import com.x930073498.rstore.property.notifier.StandardNotifier
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.properties.ReadOnlyProperty
 import kotlin.properties.ReadWriteProperty
+import kotlin.reflect.KProperty
 
 
 fun <V> IStoreProviderComponent.property(
@@ -30,6 +32,22 @@ fun <V> IStoreProviderComponent.property(
         EmptyInitializer(),
         StandardNotifier(),
         ParamsChecker(shouldSaveState, isAnchorProperty),
+        equals
+    )
+}
+
+fun <V, T> IStoreProvider.property(
+    property: KProperty<V>,
+    isAnchorProperty: Boolean=false,
+    equals: Equals<T> = DefaultEquals(),
+    transfer: V.() -> T,
+): ReadOnlyProperty<IStoreProviderComponent, T> {
+    return NotifyPropertyDelegate(
+        this,
+        TargetPropertyFactory(property,transfer),
+        EmptyInitializer(),
+        StandardNotifier(),
+        ParamsChecker(shouldSaveState = false, isAnchorProperty = isAnchorProperty),
         equals
     )
 }
@@ -122,6 +140,7 @@ fun <V> IStoreProviderComponent.flowProperty(
         equals
     )
 }
+
 
 fun <V> IStoreProviderComponent.liveDataProperty(
     defaultValue: V? = null,

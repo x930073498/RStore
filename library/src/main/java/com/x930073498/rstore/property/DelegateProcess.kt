@@ -3,6 +3,7 @@ package com.x930073498.rstore.property
 import com.x930073498.rstore.core.Equals
 import com.x930073498.rstore.core.IStoreProvider
 import com.x930073498.rstore.property.equals.TransformEquals
+import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
 data class DelegateProcess<T : IStoreProvider, Data, Source> constructor(
@@ -10,6 +11,7 @@ data class DelegateProcess<T : IStoreProvider, Data, Source> constructor(
     val initializer: SourceInitializer<T, Data, Source>,
     val notifier: ChangeNotifier<T, Data, Source>,
     val checker: StateChecker<T, Data, Source>,
+    val delegate:ReadWriteProperty<T,Source>,
     val equals: Equals<Data>
 ) {
     internal fun realEquals(provider: T, property: KProperty<*>): Equals<Source> {

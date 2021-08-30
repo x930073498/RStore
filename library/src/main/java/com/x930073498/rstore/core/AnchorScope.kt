@@ -2,6 +2,7 @@ package com.x930073498.rstore.core
 
 import com.x930073498.rstore.anchor.InitializationAction
 import com.x930073498.rstore.anchor.PropertyAction
+import kotlinx.coroutines.CoroutineScope
 import kotlin.reflect.KProperty
 
 interface AnchorScope<T : IStoreProvider> {
@@ -14,6 +15,7 @@ fun <T : IStoreProvider, V> AnchorScope<T>.stareAt(
 ) {
     pushAction(PropertyAction(property, action))
 }
+
 
 fun <T : IStoreProvider> AnchorScope<T>.onInitialized(action: () -> Unit) {
     pushAction(InitializationAction { action() })

@@ -1,3 +1,5 @@
+@file:Suppress("LocalVariableName")
+
 package com.x930073498.rstore.internal
 
 import androidx.lifecycle.*
@@ -13,6 +15,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.*
+import java.util.Observer
 import kotlin.reflect.KProperty
 import kotlin.reflect.KProperty0
 import kotlin.reflect.KProperty1
@@ -21,7 +24,6 @@ import kotlin.reflect.KProperty1
 private const val anchorPropertyEventChannelKey = "1306d9dd-5824-4341-af54-d45265fc2a1e"
 private const val anchorPropertyEventsFlowKey = "4dd1aea6-5f82-43be-bddd-d538b5961a38"
 private const val globalChangePropertiesKey = "eb3dae31-ff93-43a4-aa8c-51492add1f01"
-
 
 
 internal data class PropertyEvent(
@@ -70,22 +72,24 @@ internal fun IStoreProvider.notifyPropertyChanged(property: KProperty<*>) {
 internal suspend fun <T : IStoreProvider, V> T.awaitUntilImpl(
     property: KProperty<V>,
     predicate: suspend V.() -> Boolean
-) {
+):V {
     val heartBeat = fromStore {
         getOrCreate(dataPropertyKey(property)) {
             HeartBeat.create()
         }
     }
+    var value:V=valueFromProperty(property) as V
     heartBeat.onBeat {
-        val value = valueFromProperty(property) as V
+         value = valueFromProperty(property) as V
         if (predicate.invoke(value)) dispose()
     }
+    return value
 
 }
 
 internal fun <T : IStoreProvider, V> T.registerPropertyChangedListenerImpl(
     property: KProperty<V>,
-    lifecycleOwner: LifecycleOwner,
+    lifecycleOwner: LifecycleOwner? = null,
     action: V.() -> Unit
 ): Disposable {
     val heartBeat = fromStore {
@@ -94,16 +98,23 @@ internal fun <T : IStoreProvider, V> T.registerPropertyChangedListenerImpl(
         }
     }
     val resumeAwait = AwaitState.create(false)
+    var observer: LifecycleObserver? = null
     val job = coroutineScope.launch(main) {
-        lifecycleOwner.lifecycle.addObserver(object : DefaultLifecycleObserver {
-            override fun onPause(owner: LifecycleOwner) {
-                resumeAwait.setState(false)
-            }
+        if (lifecycleOwner != null) {
+           val _observer = object : DefaultLifecycleObserver {
+                override fun onPause(owner: LifecycleOwner) {
+                    resumeAwait.setState(false)
+                }
 
-            override fun onResume(owner: LifecycleOwner) {
-                resumeAwait.setState(true)
+                override fun onResume(owner: LifecycleOwner) {
+                    resumeAwait.setState(true)
+                }
             }
-        })
+            observer=_observer
+            lifecycleOwner.lifecycle.addObserver(_observer)
+        } else {
+            resumeAwait.setState(true)
+        }
         heartBeat.onBeat {
             resumeAwait.awaitState(true)
             invokeAction(property, action)
@@ -112,6 +123,15 @@ internal fun <T : IStoreProvider, V> T.registerPropertyChangedListenerImpl(
     }
     return Disposable {
         job.cancel()
+        runCatching {
+            launchOnMain {
+                if (lifecycleOwner != null) {
+                    observer?.let {
+                        lifecycleOwner.lifecycle.removeObserver(it)
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -173,7 +193,7 @@ internal fun <T : IStoreProvider> AnchorScope<T>.stareAtImpl(
     vararg property: KProperty<*>,
     action: () -> Unit
 ) {
-    property.forEach { stareAt<T,Any?>(it) { action() } }
+    property.forEach { stareAt<T, Any?>(it) { action() } }
 }
 
 internal operator fun AnchorScopeLifecycleHandler.plus(disposable: Disposable): AnchorScopeLifecycleHandler {

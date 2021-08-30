@@ -7,14 +7,12 @@ import kotlinx.coroutines.launch
 fun Coroutine.launchOnMain(
     start: CoroutineStart = CoroutineStart.DEFAULT,
     block: suspend CoroutineScope.() -> Unit
-) {
-    coroutineScope.launch(main, start, block)
-}
+) = coroutineScope.launch(main, start, block)
+
 
 fun Coroutine.launchOnIO(
     start: CoroutineStart = CoroutineStart.DEFAULT,
     block: suspend CoroutineScope.() -> Unit
-) {
-    coroutineScope.launch(io, start, block)
-}
+) = coroutineScope.launch(io, start, block)
+
 
