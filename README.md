@@ -53,6 +53,7 @@ class TestFragment : Fragment(R.layout.fragment_test), StoreComponent {
 }
 ```
 **activity中**
+```
 class MainActivity : AppCompatActivity(), StoreComponent {
     private val viewModel by lazy { ViewModelProvider(this).get(MainViewModel::class.java) }
 
@@ -98,3 +99,4 @@ class MainActivity : AppCompatActivity(), StoreComponent {
 
     }
 }
+```
