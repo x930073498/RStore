@@ -9,8 +9,9 @@ import com.x930073498.rstore.util.LockList
 import com.x930073498.rstore.util.awaitState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.reflect.KProperty
@@ -84,19 +85,30 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
         state.isInitialized = false
         job?.cancel()
         job = with(storeProvider) {
-            coroutineScope.launch {
-                async(io) {
-                    flow.collect {
-                        pushProperty(it.property)
-                        changedHeartBeat.beat()
+            launchOnIO {
+//                async(io) {
+//                    flow.collect {
+//                        pushProperty(it.property)
+//                        changedHeartBeat.beat()
+//                    }
+//                }.start()
+//                runAction()
+                flow.map {
+                    pushProperty(it.property)
+                }
+                    .onStart {
+                        emit(Unit)
                     }
-                }.start()
-                async(io) {
-                    changedHeartBeat.onBeat {
+                    .buffer(Channel.CONFLATED)
+                    .collect {
                         runAction()
                     }
-                }.start()
-                changedHeartBeat.beat()
+//                async(io) {
+//                    changedHeartBeat.onBeat {
+//                        runAction()
+//                    }
+//                }.start()
+//                changedHeartBeat.beat()
             }
         }
     }

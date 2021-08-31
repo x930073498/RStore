@@ -3,14 +3,13 @@ package com.x930073498.rstore.core
 import kotlinx.coroutines.CoroutineScope
 import kotlin.coroutines.CoroutineContext
 
-
 interface Coroutine {
     val coroutineScope: CoroutineScope
     val io: CoroutineContext
     val main: CoroutineContext
 }
 
-interface IStoreProvider : Coroutine {
+ interface IStoreProvider : Coroutine {
     val store: IStore
 }
 

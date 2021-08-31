@@ -3,34 +3,36 @@ package com.x930073498.sample
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.SavedStateViewModelFactory
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.x930073498.rstore.*
-import com.x930073498.rstore.core.LifecycleAnchorStarter
-import com.x930073498.rstore.core.StoreComponent
-import com.x930073498.rstore.core.onInitialized
-import com.x930073498.rstore.core.stareAt
+import com.x930073498.rstore.core.*
+import com.x930073498.rstore.property.lazyField
 import com.x930073498.sample.databinding.ActivityMainBinding
 import kotlinx.coroutines.launch
 
 
 @SuppressLint("SetTextI18n")
 class MainActivity : AppCompatActivity(), StoreComponent {
-    private val viewModel by lazy { ViewModelProvider(this).get(MainViewModel::class.java) }
+    private val viewModel by savedStateViewModels<MainViewModel>()
 
-    private val adapter by lazy {
+    private val adapter by lazyField {
         MainFragmentFragmentStateAdapter(supportFragmentManager, lifecycle)
     }
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         val binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         binding.viewPager.adapter = adapter
         setState(binding)
     }
+
 
     private fun setState(binding: ActivityMainBinding) {
 
@@ -44,6 +46,9 @@ class MainActivity : AppCompatActivity(), StoreComponent {
                 stareAt(::countOb) {
                     println("enter this line countOb=$this")
                     binding.data.text = "data=$this"
+                    stareAt(::count) {
+
+                    }
                 }
                 stareAt(::list) {
                     println("enter this line list=$this")

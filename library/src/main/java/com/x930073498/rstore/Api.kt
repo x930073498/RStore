@@ -20,6 +20,8 @@ import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty0
 import kotlin.reflect.KProperty1
 
+
+
 /**
  * 锚属性 指可以在[com.x930073498.rstore.core.StoreComponent]中通过withAnchor监听的属性
  *
