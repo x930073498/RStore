@@ -17,9 +17,22 @@ import com.x930073498.rstore.property.notifier.StandardNotifier
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.properties.ReadOnlyProperty
 import kotlin.properties.ReadWriteProperty
-import kotlin.reflect.KProperty
+import kotlin.reflect.KProperty0
+import kotlin.reflect.KProperty1
 
+/**
+ * 锚属性 指可以在[com.x930073498.rstore.core.StoreComponent]中通过withAnchor监听的属性
+ *
+ */
 
+/**
+ *
+ * 通过默认值初始化代理属性
+ * @param defaultValue 属性默认值
+ * @param shouldSaveState 是否支持savedState
+ * @param isAnchorProperty 是否是锚属性
+ * @param equals 属性相等比较器
+ */
 fun <V> IStoreProviderComponent.property(
     defaultValue: V,
     shouldSaveState: Boolean = false,
@@ -36,15 +49,22 @@ fun <V> IStoreProviderComponent.property(
     )
 }
 
+/**
+ * 通过目标属性方法初始化属性，并监听目标属性的变化并自动改变定义属性的值
+ * @param property 目标属性（必须是使用类似方式声明的属性，不然无效）
+ * @param isAnchorProperty 是否是锚属性
+ *  @param equals 属性相等比较器
+ * @param transform 属性转化代码块
+ */
 fun <V, T> IStoreProvider.property(
-    property: KProperty<V>,
-    isAnchorProperty: Boolean=false,
+    property: KProperty0<V>,
+    isAnchorProperty: Boolean = false,
     equals: Equals<T> = DefaultEquals(),
-    transfer: V.() -> T,
+    transform: V.() -> T,
 ): ReadOnlyProperty<IStoreProviderComponent, T> {
     return NotifyPropertyDelegate(
         this,
-        TargetPropertyFactory(property,transfer),
+        TargetPropertyFactory(property, transform),
         EmptyInitializer(),
         StandardNotifier(),
         ParamsChecker(shouldSaveState = false, isAnchorProperty = isAnchorProperty),
@@ -52,6 +72,36 @@ fun <V, T> IStoreProvider.property(
     )
 }
 
+/**
+ * 通过目标属性方法初始化属性，并监听目标属性的变化并自动改变定义属性的值
+ * @param property 目标属性（必须是使用类似方式声明的属性，不然无效）
+ * @param isAnchorProperty 是否是锚属性
+ *  @param equals 属性相等比较器
+ * @param transform 属性转化代码块
+ */
+fun <V, T, P : IStoreProvider> P.property(
+    property: KProperty1<P, V>,
+    isAnchorProperty: Boolean = false,
+    equals: Equals<T> = DefaultEquals(),
+    transform: V.() -> T,
+): ReadOnlyProperty<P, T> {
+    return NotifyPropertyDelegate(
+        this,
+        TargetPropertyFactory(property, transform),
+        EmptyInitializer(),
+        StandardNotifier(),
+        ParamsChecker(shouldSaveState = false, isAnchorProperty = isAnchorProperty),
+        equals
+    )
+}
+
+/**
+ *
+ * 通过默认值初始化代理属性
+ * @param defaultValue 属性默认值
+ * @param isAnchorProperty 是否是锚属性
+ * @param equals 属性相等比较器
+ */
 fun <V> IStoreProvider.property(
     defaultValue: V,
     isAnchorProperty: Boolean = false,
@@ -67,6 +117,9 @@ fun <V> IStoreProvider.property(
     )
 }
 
+/**
+ * flow类型的属性，不建议使用
+ */
 fun <V> IStoreProvider.flowProperty(
     defaultValue: V,
     isAnchorProperty: Boolean = false,
@@ -82,6 +135,9 @@ fun <V> IStoreProvider.flowProperty(
     )
 }
 
+/**
+ * liveData类型的属性，不建议使用
+ */
 fun <V> IStoreProvider.liveDataProperty(
     defaultValue: V? = null,
     isAnchorProperty: Boolean = false,
@@ -97,6 +153,9 @@ fun <V> IStoreProvider.liveDataProperty(
     )
 }
 
+/**
+ * flow类型的List属性，不建议使用
+ */
 fun <V> IStoreProvider.listFlowProperty(
     isAnchorProperty: Boolean = false,
     equals: Equals<V> = DefaultEquals()
@@ -111,6 +170,9 @@ fun <V> IStoreProvider.listFlowProperty(
     )
 }
 
+/**
+ * liveData类型的List属性，不建议使用
+ */
 fun <V> IStoreProvider.listLiveDataProperty(
     isAnchorProperty: Boolean = false,
     equals: Equals<V> = DefaultEquals()
@@ -125,6 +187,9 @@ fun <V> IStoreProvider.listLiveDataProperty(
     )
 }
 
+/**
+ * flow类型属性，不建议使用
+ */
 fun <V> IStoreProviderComponent.flowProperty(
     defaultValue: V,
     shouldSaveState: Boolean = false,
@@ -141,7 +206,9 @@ fun <V> IStoreProviderComponent.flowProperty(
     )
 }
 
-
+/**
+ * livaData类型属性，不建议使用
+ */
 fun <V> IStoreProviderComponent.liveDataProperty(
     defaultValue: V? = null,
     shouldSaveState: Boolean = false,
@@ -158,6 +225,9 @@ fun <V> IStoreProviderComponent.liveDataProperty(
     )
 }
 
+/**
+ * flow类型list属性，不建议使用
+ */
 fun <V> IStoreProviderComponent.listFlowProperty(
     shouldSaveState: Boolean = false,
     isAnchorProperty: Boolean = false,
@@ -173,6 +243,9 @@ fun <V> IStoreProviderComponent.listFlowProperty(
     )
 }
 
+/**
+ * livedata类型list属性，不建议使用
+ */
 fun <V> IStoreProviderComponent.listLiveDataProperty(
     shouldSaveState: Boolean = false,
     isAnchorProperty: Boolean = false,
@@ -188,6 +261,13 @@ fun <V> IStoreProviderComponent.listLiveDataProperty(
     )
 }
 
+/**
+ *
+ * 初始化list类型代理属性
+ * @param shouldSaveState 是否支持savedState
+ * @param isAnchorProperty 是否是锚属性
+ * @param equals 属性相等比较器
+ */
 fun <V> IStoreProviderComponent.listProperty(
     shouldSaveState: Boolean = false,
     isAnchorProperty: Boolean = false,
@@ -195,6 +275,12 @@ fun <V> IStoreProviderComponent.listProperty(
 ): ReadWriteProperty<IStoreProviderComponent, List<V>> =
     property(emptyList(), shouldSaveState, isAnchorProperty, ListEquals(equals))
 
+/**
+ *
+ * 初始化list类型代理属性
+ * @param isAnchorProperty 是否是锚属性
+ * @param equals 属性相等比较器
+ */
 fun <V> IStoreProvider.listProperty(
     isAnchorProperty: Boolean = false,
     equals: Equals<V> = DefaultEquals()

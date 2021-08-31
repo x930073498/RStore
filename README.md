@@ -7,11 +7,14 @@
 **viewmodel中**
 
 ```
+//如果属性需要监听需使用下面类似的方式初始化属性（库里提供的代理属性方法）
 class MainViewModel(application: Application, handle: SavedStateHandle) :
     SaveStateStoreViewModel(application, handle) {
+    //isAnchorProperty 与StoreComponent 中的viewmodel.withAnchor 配合使用，true表示可以监听
     val countOb by property(::count,isAnchorProperty = true){
         "$this"
     }
+    //shouldSaveState 是否使用savedState缓存对象
     var count by property(0, shouldSaveState = true)
     val data by flowProperty(count, isAnchorProperty = true, shouldSaveState = true)
 
@@ -21,6 +24,7 @@ class MainViewModel(application: Application, handle: SavedStateHandle) :
 
 **fragment中**
 ```
+//fragment（activity实现StoreComponent，不要复写任何方法）
 class TestFragment : Fragment(R.layout.fragment_test), StoreComponent {
 
     private val viewModel by viewModels<MainViewModel>()
@@ -36,14 +40,21 @@ class TestFragment : Fragment(R.layout.fragment_test), StoreComponent {
         super.onViewCreated(view, savedInstanceState)
         val viewBinding = FragmentTestBinding.bind(view)
 
+//监听viewmodel 中isAnchorProperty=true的属性
+//starter 用于控制流程开始的时机，默认在StoreComponent 进入onResume周期时开始进入流程（监听代码块开始生效）
         viewModel.withAnchor(starter = LifecycleAnchorStarter(viewModel.data.value > 0)) {
+            //这里面的代码块会运行多次，不要在里面直接写逻辑
             with(it) {
+
                 onInitialized {
+                           //初始化时运行，只会运行一次
                     viewBinding.root.setOnClickListener {
                         data.tryEmit(++count)
                     }
                 }
+                //监听data属性的变化
                 stareAt(::data) {
+                //属性变化时执行
                     viewBinding.data.text = "data $position =${data.value}"
                 }
             }
@@ -52,7 +63,7 @@ class TestFragment : Fragment(R.layout.fragment_test), StoreComponent {
     }
 }
 ```
-**activity中**
+**activity中（与fragment中的使用方法一致）**
 ```
 class MainActivity : AppCompatActivity(), StoreComponent {
     private val viewModel by lazy { ViewModelProvider(this).get(MainViewModel::class.java) }
