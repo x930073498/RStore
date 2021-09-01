@@ -34,6 +34,12 @@ class MapStore : IStore {
         }
     }
 
+    override fun contains(key: Any): Boolean {
+        return doLock {
+            map.containsKey(key)
+        }
+    }
+
     override fun clear() {
         doLock {
             map.values.forEach {

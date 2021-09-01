@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.View
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import com.x930073498.rstore.core.LifecycleAnchorStarter
 import com.x930073498.rstore.core.StoreComponent
@@ -13,7 +14,7 @@ import com.x930073498.sample.databinding.FragmentTestBinding
 
 class TestFragment : Fragment(R.layout.fragment_test), StoreComponent {
 
-    private val viewModel by viewModels<MainViewModel>()
+    private val viewModel by activityViewModels<MainViewModel>()
 
     private var position = 0
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,8 +34,8 @@ class TestFragment : Fragment(R.layout.fragment_test), StoreComponent {
                         data.tryEmit(++count)
                     }
                 }
-                stareAt(::data) {
-                    viewBinding.data.text = "data $position =${data.value}"
+                stareAt(::countOb) {
+                    viewBinding.data.text = "data=$this"
                 }
             }
         }

@@ -16,8 +16,8 @@ internal class StandardNotifier<T : IStoreProvider, Data, Source> :
     ) {
         notifyPropertyChanged(property)
         with(process) {
-            with(checker) {
-                if (isAnchorProperty(property, process)) {
+            with(featureProvider) {
+                if (isAnchorProperty()) {
                     notifyAnchorPropertyChanged(property)
                 }
             }

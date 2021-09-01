@@ -20,6 +20,8 @@ interface AwaitState<T> {
 
     fun setState(state: T)
 
+    val state:T
+
     suspend fun awaitState(predicate: T.() -> Boolean)
 
 }
@@ -42,6 +44,9 @@ private class AwaitStateImpl<T>(defaultState: T) : AwaitState<T> {
         if (predicate(flow.value)) return
         flow.first { predicate(it) }
     }
+
+    override val state: T
+        get() = flow.value
 
 
 }

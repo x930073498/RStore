@@ -40,6 +40,12 @@ class SaveStateHandleStore(private val handle: SavedStateHandle) : ISaveStateSto
         }
     }
 
+    override fun contains(key: String): Boolean {
+        return doLock {
+            handle.contains(key)
+        }
+    }
+
     override fun clear() {
         doLock {
             handle.keys().forEach {

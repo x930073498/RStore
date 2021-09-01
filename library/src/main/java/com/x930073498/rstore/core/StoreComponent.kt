@@ -9,25 +9,30 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.*
 import androidx.savedstate.SavedStateRegistryOwner
 import com.x930073498.rstore.LifecycleAnchorStarter
-import com.x930073498.rstore.SaveStateHandleStore
 import com.x930073498.rstore.SaveStateStoreViewModel
 import com.x930073498.rstore.app
 import com.x930073498.rstore.internal.awaitUntilImpl
 import com.x930073498.rstore.internal.registerAnchorPropertyChangedListenerImpl
 import com.x930073498.rstore.internal.registerPropertyChangedListenerImpl
-import com.x930073498.rstore.internal.setSavedStateRegistryOwner
 import com.x930073498.rstore.property.lazyField
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.plus
+import kotlin.coroutines.CoroutineContext
 import kotlin.properties.ReadOnlyProperty
-
 import kotlin.reflect.KProperty
 
-interface StoreComponent : SavedStateRegistryOwner {
+interface StoreComponent : SavedStateRegistryOwner, Coroutine {
+    override val coroutineScope: CoroutineScope
+        get() = CoroutineScope(storeProvider.coroutineScope.coroutineContext + lifecycleScope.coroutineContext)
+    override val io: CoroutineContext
+        get() = storeProvider.io
+    override val main: CoroutineContext
+        get() = storeProvider.main
 
     suspend fun <T : IStoreProvider, V> T.awaitUntil(
         property: KProperty<V>,
         predicate: suspend V.() -> Boolean
     ) = with(this@StoreComponent) {
-        setSavedStateRegistryOwner(this)
         awaitUntilImpl(property, predicate)
     }
 
@@ -36,7 +41,6 @@ interface StoreComponent : SavedStateRegistryOwner {
         lifecycleOwner: LifecycleOwner = defaultLifecycleOwner,
         action: V.() -> Unit
     ) = with(this@StoreComponent) {
-        setSavedStateRegistryOwner(this)
         registerPropertyChangedListenerImpl(property, lifecycleOwner, action)
     }
 
@@ -48,7 +52,6 @@ interface StoreComponent : SavedStateRegistryOwner {
         ),
         action: AnchorScope<T>.(T) -> Unit
     ) = with(this@StoreComponent) {
-        setSavedStateRegistryOwner(this)
         registerAnchorPropertyChangedListenerImpl(starter, action)
     }
 
@@ -72,6 +75,7 @@ val StoreComponent.application: Application
         }
     }
 val StoreComponent.savedStateViewModelFactory: ViewModelProvider.Factory by lazyField {
+    it.bindLifecycle(defaultLifecycleOwner)
     if (this is HasDefaultViewModelProviderFactory) {
         val defaultFactory = defaultViewModelProviderFactory
         if (defaultFactory is SavedStateViewModelFactory) {
@@ -90,6 +94,7 @@ inline fun <reified T> savedStateViewModels() where T : ISaveStateStoreProvider,
 @PublishedApi
 internal fun <T> savedStateViewModels(target: Class<T>): ReadOnlyProperty<StoreComponent, T> where T : ViewModel, T : ISaveStateStoreProvider {
     return lazyField {
+        it.bindLifecycle(defaultLifecycleOwner)
         when (this) {
             is ViewModelStoreOwner -> {
                 ViewModelProvider(this, savedStateViewModelFactory).get(target)
@@ -107,6 +112,7 @@ internal fun <T> savedStateViewModels(target: Class<T>): ReadOnlyProperty<StoreC
 val StoreComponent.storeProvider by savedStateViewModels<SaveStateStoreViewModel>()
 
 val StoreComponent.context: Context by lazyField {
+    it.bindLifecycle(defaultLifecycleOwner)
     when (this) {
         is Activity -> this
         is Fragment -> requireContext()

@@ -7,77 +7,27 @@ import com.x930073498.rstore.util.AwaitState
 import com.x930073498.rstore.util.HeartBeat
 import com.x930073498.rstore.util.LockList
 import com.x930073498.rstore.util.awaitState
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlin.reflect.KProperty
 
-
-internal class DefaultPropertyContainer(private val globalChangedProperties: LockList<KProperty<*>>) :
-    PropertyContainer {
-    var isInitialized = false
-
-    private val delegateProperties = LockList<KProperty<*>>()
-
-
-    override fun getDelegateProperty(property: KProperty<*>): KProperty<*>? {
-        return delegateProperties.doOnLock {
-            var result =
-                delegateProperties.firstOrNull { property == it || property.name == it.name }
-            if (!isInitialized && result == null) {
-                result = if (globalChangedProperties.isEmpty()) property else
-                    globalChangedProperties.firstOrNull { property == it || property.name == it.name }
-            }
-            result
-        }
-    }
-
-    override fun addProperty(property: KProperty<*>) {
-        delegateProperties.doOnLock {
-            delegateProperties.remove(property)
-            delegateProperties.add(property)
-        }
-    }
-
-    override fun removeDelegateProperty(property: KProperty<*>) {
-        delegateProperties.removeAll { property == it || property.name == it.name }
-    }
-
-    override fun dispose() {
-        delegateProperties.clear()
-    }
-
-}
 
 
 internal class AnchorScopeImpl<T : IStoreProvider>(
     private val storeProvider: T,
     private val flow: Flow<PropertyEvent>,
-    private val globalChangedProperties: LockList<KProperty<*>>,
     private val action: AnchorScope<T>.(T) -> Unit
 ) : Disposable, AnchorScope<T>, AnchorScopeLifecycleHandler {
     private var job: Job? = null
     private val resumeAwaitState = AwaitState.create(false)
     private val manager = EventActionManager<T, AnchorScopeState>(storeProvider)
-    private val container = DefaultPropertyContainer(globalChangedProperties)
-    private val changedHeartBeat = HeartBeat.create()
-    private val state = AnchorScopeState(false, container, resumeAwaitState)
+    private val state = AnchorScopeState(false, resumeAwaitState)
 
     override fun dispose() {
-        container.dispose()
         manager.dispose()
         job?.cancel()
-    }
-
-    private fun pushProperty(property: KProperty<*>) {
-        container.addProperty(property)
-        if (!globalChangedProperties.contains(property)) {
-            globalChangedProperties.add(property)
-        }
     }
 
 
@@ -86,29 +36,19 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
         job?.cancel()
         job = with(storeProvider) {
             launchOnIO {
-//                async(io) {
-//                    flow.collect {
-//                        pushProperty(it.property)
-//                        changedHeartBeat.beat()
-//                    }
-//                }.start()
-//                runAction()
+                var count = 0
                 flow.map {
-                    pushProperty(it.property)
+                    println("enter this line 111")
+                    count++
                 }
                     .onStart {
-                        emit(Unit)
+                        emit(count++)
                     }
                     .buffer(Channel.CONFLATED)
                     .collect {
+                        println("enter this line 222")
                         runAction()
                     }
-//                async(io) {
-//                    changedHeartBeat.onBeat {
-//                        runAction()
-//                    }
-//                }.start()
-//                changedHeartBeat.beat()
             }
         }
     }
@@ -116,6 +56,7 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
     private suspend fun AnchorScopeImpl<T>.runAction() {
         with(storeProvider) {
             manager.begin()
+            delay(200)
             withContext(main) {
                 resumeAwaitState.awaitState(true)
                 action(this@AnchorScopeImpl, this@with)
@@ -124,7 +65,6 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
             resumeAwaitState.awaitState(true)
             manager.runAction(state)
             state.isInitialized = true
-            container.isInitialized = true
         }
     }
 

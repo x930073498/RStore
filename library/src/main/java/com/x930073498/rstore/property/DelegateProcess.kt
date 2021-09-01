@@ -10,7 +10,7 @@ data class DelegateProcess<T : IStoreProvider, Data, Source> constructor(
     val factory: SourceFactory<T, Data, Source>,
     val initializer: SourceInitializer<T, Data, Source>,
     val notifier: ChangeNotifier<T, Data, Source>,
-    val checker: StateChecker<T, Data, Source>,
+    val featureProvider: FeatureProvider,
     val delegate:ReadWriteProperty<T,Source>,
     val equals: Equals<Data>
 ) {

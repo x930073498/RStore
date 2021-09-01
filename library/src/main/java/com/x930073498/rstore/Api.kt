@@ -1,12 +1,13 @@
 package com.x930073498.rstore
 
 import androidx.lifecycle.MutableLiveData
-import com.x930073498.rstore.core.DefaultEquals
-import com.x930073498.rstore.core.Equals
-import com.x930073498.rstore.core.IStoreProvider
-import com.x930073498.rstore.core.IStoreProviderComponent
+import com.x930073498.rstore.core.*
+import com.x930073498.rstore.internal.propertyValueByDelegate
+import com.x930073498.rstore.internal.setDefaultFeatureImpl
+import com.x930073498.rstore.internal.setPropertyValueByDelegate
+import com.x930073498.rstore.property.FeatureProvider
 import com.x930073498.rstore.property.NotifyPropertyDelegate
-import com.x930073498.rstore.property.checker.ParamsChecker
+import com.x930073498.rstore.property.checker.StateAsFeatureProvider
 import com.x930073498.rstore.property.equals.ListEquals
 import com.x930073498.rstore.property.factory.InstanceFactory
 import com.x930073498.rstore.property.factory.MutLiveDataFactory
@@ -17,9 +18,9 @@ import com.x930073498.rstore.property.notifier.StandardNotifier
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.properties.ReadOnlyProperty
 import kotlin.properties.ReadWriteProperty
+import kotlin.reflect.KProperty
 import kotlin.reflect.KProperty0
 import kotlin.reflect.KProperty1
-
 
 
 /**
@@ -46,7 +47,22 @@ fun <V> IStoreProviderComponent.property(
         InstanceFactory(defaultValue),
         EmptyInitializer(),
         StandardNotifier(),
-        ParamsChecker(shouldSaveState, isAnchorProperty),
+        StateAsFeatureProvider(shouldSaveState, isAnchorProperty),
+        equals
+    )
+}
+
+fun <V> IStoreProviderComponent.property(
+    defaultValue: V,
+    feature: Feature = Feature,
+    equals: Equals<V> = DefaultEquals()
+): ReadWriteProperty<IStoreProviderComponent, V> {
+    return NotifyPropertyDelegate(
+        this,
+        InstanceFactory(defaultValue),
+        EmptyInitializer(),
+        StandardNotifier(),
+        FeatureProvider(feature),
         equals
     )
 }
@@ -69,7 +85,7 @@ fun <V, T> IStoreProvider.property(
         TargetPropertyFactory(property, transform),
         EmptyInitializer(),
         StandardNotifier(),
-        ParamsChecker(shouldSaveState = false, isAnchorProperty = isAnchorProperty),
+        StateAsFeatureProvider(shouldSaveState = false, isAnchorProperty = isAnchorProperty),
         equals
     )
 }
@@ -92,7 +108,7 @@ fun <V, T, P : IStoreProvider> P.property(
         TargetPropertyFactory(property, transform),
         EmptyInitializer(),
         StandardNotifier(),
-        ParamsChecker(shouldSaveState = false, isAnchorProperty = isAnchorProperty),
+        StateAsFeatureProvider(shouldSaveState = false, isAnchorProperty = isAnchorProperty),
         equals
     )
 }
@@ -114,7 +130,7 @@ fun <V> IStoreProvider.property(
         InstanceFactory(defaultValue),
         EmptyInitializer(),
         StandardNotifier(),
-        ParamsChecker(false, isAnchorProperty),
+        StateAsFeatureProvider(false, isAnchorProperty),
         equals
     )
 }
@@ -132,7 +148,7 @@ fun <V> IStoreProvider.flowProperty(
         MutableStateFlowFactory(defaultValue),
         EmptyInitializer(),
         StandardNotifier(),
-        ParamsChecker(false, isAnchorProperty),
+        StateAsFeatureProvider(false, isAnchorProperty),
         equals
     )
 }
@@ -150,7 +166,7 @@ fun <V> IStoreProvider.liveDataProperty(
         MutLiveDataFactory(defaultValue),
         EmptyInitializer(),
         StandardNotifier(),
-        ParamsChecker(false, isAnchorProperty),
+        StateAsFeatureProvider(false, isAnchorProperty),
         equals
     )
 }
@@ -167,7 +183,7 @@ fun <V> IStoreProvider.listFlowProperty(
         MutableStateFlowFactory(emptyList()),
         EmptyInitializer(),
         StandardNotifier(),
-        ParamsChecker(false, isAnchorProperty),
+        StateAsFeatureProvider(false, isAnchorProperty),
         ListEquals(equals)
     )
 }
@@ -184,7 +200,7 @@ fun <V> IStoreProvider.listLiveDataProperty(
         MutLiveDataFactory(null),
         EmptyInitializer(),
         StandardNotifier(),
-        ParamsChecker(false, isAnchorProperty),
+        StateAsFeatureProvider(false, isAnchorProperty),
         ListEquals(equals)
     )
 }
@@ -203,7 +219,7 @@ fun <V> IStoreProviderComponent.flowProperty(
         MutableStateFlowFactory(defaultValue),
         EmptyInitializer(),
         StandardNotifier(),
-        ParamsChecker(shouldSaveState, isAnchorProperty),
+        StateAsFeatureProvider(shouldSaveState, isAnchorProperty),
         equals
     )
 }
@@ -222,7 +238,7 @@ fun <V> IStoreProviderComponent.liveDataProperty(
         MutLiveDataFactory(defaultValue),
         EmptyInitializer(),
         StandardNotifier(),
-        ParamsChecker(shouldSaveState, isAnchorProperty),
+        StateAsFeatureProvider(shouldSaveState, isAnchorProperty),
         equals
     )
 }
@@ -240,7 +256,7 @@ fun <V> IStoreProviderComponent.listFlowProperty(
         MutableStateFlowFactory(emptyList()),
         EmptyInitializer(),
         StandardNotifier(),
-        ParamsChecker(shouldSaveState, isAnchorProperty),
+        StateAsFeatureProvider(shouldSaveState, isAnchorProperty),
         ListEquals(equals)
     )
 }
@@ -258,7 +274,7 @@ fun <V> IStoreProviderComponent.listLiveDataProperty(
         MutLiveDataFactory(null),
         EmptyInitializer(),
         StandardNotifier(),
-        ParamsChecker(shouldSaveState, isAnchorProperty),
+        StateAsFeatureProvider(shouldSaveState, isAnchorProperty),
         ListEquals(equals)
     )
 }
@@ -288,4 +304,20 @@ fun <V> IStoreProvider.listProperty(
     equals: Equals<V> = DefaultEquals()
 ): ReadWriteProperty<IStoreProvider, List<V>> =
     property(emptyList(), isAnchorProperty, ListEquals(equals))
+
+fun <T> T.setDefaultFeature(feature: Feature) where  T : IStoreProvider = setDefaultFeatureImpl(feature)
+
+
+operator fun <T, V : IStoreProvider> T.getValue(
+    thisRef: V,
+    property: KProperty<*>
+) = propertyValueByDelegate(thisRef, property)
+
+
+operator fun <T, V : IStoreProvider> T.setValue(
+    thisRef: V,
+    property: KProperty<*>,
+    value: T
+) = setPropertyValueByDelegate(thisRef, property, value)
+
 

@@ -26,6 +26,8 @@ interface ISaveStateStore : Disposable {
 
     fun get(key: String): Any?
 
+    fun contains(key: String):Boolean
+
     fun clear()
     override fun dispose() {
         clear()
@@ -37,6 +39,8 @@ interface IStore : Disposable {
     fun put(key: Any, value: Any?)
 
     fun get(key: Any): Any?
+
+    fun contains(key: Any):Boolean
 
     fun clear()
     override fun dispose() {

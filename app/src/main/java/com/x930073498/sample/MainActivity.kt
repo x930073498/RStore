@@ -11,7 +11,10 @@ import androidx.lifecycle.lifecycleScope
 import com.x930073498.rstore.*
 import com.x930073498.rstore.core.*
 import com.x930073498.rstore.property.lazyField
+import com.x930073498.rstore.util.AwaitState
+import com.x930073498.rstore.util.awaitState
 import com.x930073498.sample.databinding.ActivityMainBinding
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
@@ -37,18 +40,28 @@ class MainActivity : AppCompatActivity(), StoreComponent {
     private fun setState(binding: ActivityMainBinding) {
 
         with(viewModel) {
+            setDefaultFeature(Feature.Anchor)
             withAnchor(starter = LifecycleAnchorStarter()) {
                 onInitialized {
+                    val awaitState = AwaitState.create(false)
                     binding.root.setOnClickListener {
-                        ++count
+                        awaitState.setState(!awaitState.state)
                     }
+                    launchOnIO {
+                        while (true) {
+                            awaitState.awaitState(true)
+                            delay(40)
+                            count++
+                        }
+                    }
+
                 }
                 stareAt(::countOb) {
-                    println("enter this line countOb=$this")
+//                    println("enter this line countOb=$this")
                     binding.data.text = "data=$this"
-                    stareAt(::count) {
-
-                    }
+                }
+                stareAt(::count) {
+                    println("enter this line count=$this")
                 }
                 stareAt(::list) {
                     println("enter this line list=$this")
