@@ -17,7 +17,16 @@ interface HeartBeat {
 
     fun beat()
 
-    suspend fun onBeat(action: suspend HeartBeatHandle.() -> Unit)
+    suspend fun <R> onBeat(action: suspend HeartBeatHandle.() -> R): R
+}
+
+fun HeartBeat.asFlow(): Flow<Unit> {
+    return flow {
+        onBeat {
+            emit(Unit)
+        }
+    }
+
 }
 
 fun interface HeartBeatHandle : Disposable {
@@ -34,12 +43,12 @@ private class HeartBeatImpl : HeartBeat {
         flow.tryEmit(count.incrementAndGet())
     }
 
-    override suspend fun onBeat(action: suspend HeartBeatHandle.() -> Unit) {
+    override suspend fun <R> onBeat(action: suspend HeartBeatHandle.() -> R): R {
         val awaitState = AwaitState.create(true)
         val handle = HeartBeatHandle {
             awaitState.setState(false)
         }
-        flow.buffer(Channel.CONFLATED).map {
+        return flow.buffer(Channel.CONFLATED).map {
             action(handle)
         }.first { !awaitState.state }
     }

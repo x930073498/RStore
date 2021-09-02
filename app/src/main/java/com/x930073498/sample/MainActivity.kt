@@ -39,11 +39,11 @@ class MainActivity : AppCompatActivity(), StoreComponent {
     private fun setState(binding: ActivityMainBinding) {
 
         with(viewModel) {
-            setFeature(::count,Feature.Anchor)
-            withProperty(::count){
+            setFeature(::count, Feature.Anchor)
+            withProperty(::count) {
                 println("enter this line count activity=$this")
             }
-            withAnchor(starter = LifecycleAnchorStarter()) {
+            withAnchor {
                 onInitialized {
                     val awaitState = AwaitState.create(false)
                     binding.root.setOnClickListener {

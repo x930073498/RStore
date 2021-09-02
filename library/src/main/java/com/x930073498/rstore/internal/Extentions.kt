@@ -18,6 +18,7 @@ import com.x930073498.rstore.property.notifier.StandardNotifier
 import com.x930073498.rstore.property.transfer.InstanceTransfer
 import com.x930073498.rstore.util.AwaitState
 import com.x930073498.rstore.util.HeartBeat
+import com.x930073498.rstore.util.asFlow
 import com.x930073498.rstore.util.awaitState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -65,7 +66,7 @@ internal fun <T : IStoreProvider, V> T.invokeAction(
     kProperty: KProperty<V>,
     action: V.() -> Unit
 ) {
-    valueFromProperty(kProperty)?.apply{
+    valueFromProperty(kProperty)?.apply {
         action()
     }
 }
@@ -87,13 +88,9 @@ internal suspend fun <T : IStoreProvider, V> T.awaitUntilImpl(
             HeartBeat.create()
         }
     }
-    var value: V = valueFromProperty(property) as V
-    heartBeat.onBeat {
-        value = valueFromProperty(property) as V
-        if (predicate.invoke(value)) dispose()
+    return heartBeat.asFlow().map { valueFromProperty(property) as V }.first {
+        predicate(it)
     }
-    return value
-
 }
 
 internal fun <T : IStoreProvider, V> T.registerPropertyChangedListenerImpl(
@@ -257,8 +254,8 @@ internal fun <T, V : IStoreProvider> setPropertyValueByDelegate(
             val key = dataPropertyKey(property)
             val feature = getFeature(property)
             val last = getInstance<T>(key)
-            val equals=getEqualsImpl(property)
-            if (!equals.equals(last,value)) {
+            val equals = getEqualsImpl(property)
+            if (!equals.equals(last, value)) {
                 put(key, value)
                 if (feature.hasFeature(Feature.SaveState) && this@with is ISaveStateStoreProvider) {
                     fromSaveStateStore {
