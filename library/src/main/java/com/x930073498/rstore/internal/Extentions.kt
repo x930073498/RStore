@@ -274,6 +274,7 @@ internal fun <T, V : IStoreProvider> setPropertyValueByDelegate(
 
 internal fun <T> T.propertyFeatureImpl(
     component: IStoreProviderComponent,
+    equals: Equals<T>,
     vararg feature: Feature
 ): ReadWriteProperty<IStoreProviderComponent, T> {
     var defaultFeature: Feature = Feature
@@ -287,7 +288,7 @@ internal fun <T> T.propertyFeatureImpl(
         EmptyInitializer(),
         StandardNotifier(),
         FeatureProvider(defaultFeature),
-        DefaultEquals()
+        equals
     )
 }
 
