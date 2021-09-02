@@ -1,15 +1,16 @@
 package com.x930073498.rstore.property
 
 import com.x930073498.rstore.core.*
-import com.x930073498.rstore.internal.appendFeature
 import com.x930073498.rstore.internal.dataSaveStateKey
-import com.x930073498.rstore.internal.setFeature
+import com.x930073498.rstore.internal.setFeatureIImpl
+import com.x930073498.rstore.property.equals.WrapEquals
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
 internal class NotifyPropertyDelegate<T : IStoreProvider, Data, Source>(
     private val provider: T,
-    factory: SourceFactory<T, Data, Source>,
+    factory: SourceFactory<Data, Source>,
+    transfer: SourceTransfer<Source, Data>,
     initializer: SourceInitializer<T, Data, Source>,
     notifier: ChangeNotifier<T, Data, Source>,
     featureProvider: FeatureProvider,
@@ -19,13 +20,14 @@ internal class NotifyPropertyDelegate<T : IStoreProvider, Data, Source>(
     private val environment =
         DelegateProcess(
             factory,
+            transfer,
             initializer,
             ChangeNotifier<T, Data, Source> { property, _, data, _ ->
                 saveState(property, data)
             } + notifier,
             featureProvider,
             this,
-            equals
+            WrapEquals(transfer, equals)
         )
 
 
@@ -35,9 +37,9 @@ internal class NotifyPropertyDelegate<T : IStoreProvider, Data, Source>(
     private fun createSource(property: KProperty<*>): Source {
         return with(provider) {
             with(environment) {
-                setFeature(property, featureProvider.feature)
+                setFeatureIImpl(property, featureProvider.feature)
                 with(factory) {
-                    createSource(property, environment, getSaveState(property))
+                    createSource(getSaveState(property))
                 }
             }
         }
@@ -46,27 +48,23 @@ internal class NotifyPropertyDelegate<T : IStoreProvider, Data, Source>(
     private fun initValue(property: KProperty<*>): Source {
         val result = createSource(property)
         value = result
-        val data = transform(property, result)
+        val data = transform(result)
         onInitialized(property, data, result)
         notify(property, data, result)
         return result
     }
 
 
-    private fun equalsPre(value: Source?, property: KProperty<*>): Boolean {
-        return with(provider) {
-            with(environment) {
-                equals(property, this@NotifyPropertyDelegate.value, value)
-            }
+    private fun equalsPre(value: Source?): Boolean {
+        return with(environment) {
+            equals.equals(this@NotifyPropertyDelegate.value, value)
         }
     }
 
-    private fun transform(property: KProperty<*>, source: Source): Data? {
-        return with(provider) {
-            with(environment) {
-                with(factory) {
-                    transform(property, environment, source)
-                }
+    private fun transform(source: Source): Data? {
+        return with(environment) {
+            with(transfer) {
+                transform(source)
             }
         }
     }
@@ -81,19 +79,17 @@ internal class NotifyPropertyDelegate<T : IStoreProvider, Data, Source>(
         }
     }
 
-    private fun shouldSaveState(property: KProperty<*>): Boolean {
-        return with(provider) {
-            with(environment) {
-                with(featureProvider) {
-                    shouldSaveState()
-                }
+    private fun shouldSaveState(): Boolean {
+        return with(environment) {
+            with(featureProvider) {
+                shouldSaveState()
             }
         }
     }
 
     private fun saveState(property: KProperty<*>, data: Data?) {
         if (provider !is ISaveStateStoreProvider) return
-        if (!shouldSaveState(property)) return
+        if (!shouldSaveState()) return
         provider.fromSaveStateStore {
             saveState(dataSaveStateKey(property), data)
         }
@@ -101,7 +97,7 @@ internal class NotifyPropertyDelegate<T : IStoreProvider, Data, Source>(
 
     private fun getSaveState(property: KProperty<*>): Data? {
         if (provider !is ISaveStateStoreProvider) return null
-        if (!shouldSaveState(property)) return null
+        if (!shouldSaveState()) return null
         return provider.fromSaveStateStore {
             getSavedState(dataSaveStateKey(property))
         }
@@ -126,13 +122,13 @@ internal class NotifyPropertyDelegate<T : IStoreProvider, Data, Source>(
         when {
             value !== this.value -> {
                 this.value = value
-                val data = transform(property, value)
+                val data = transform(value)
                 onInitialized(property, data, value)
                 notify(property, data, value)
             }
-            !equalsPre(value, property) -> {
+            !equalsPre(value) -> {
                 this.value = value
-                val data = transform(property, value)
+                val data = transform(value)
                 notify(property, data, value)
             }
             else -> {

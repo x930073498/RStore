@@ -3,7 +3,8 @@ package com.x930073498.rstore
 import androidx.lifecycle.MutableLiveData
 import com.x930073498.rstore.core.*
 import com.x930073498.rstore.internal.propertyValueByDelegate
-import com.x930073498.rstore.internal.setFeature
+import com.x930073498.rstore.internal.setEqualsImpl
+import com.x930073498.rstore.internal.setFeatureIImpl
 import com.x930073498.rstore.internal.setPropertyValueByDelegate
 import com.x930073498.rstore.property.FeatureProvider
 import com.x930073498.rstore.property.NotifyPropertyDelegate
@@ -14,7 +15,13 @@ import com.x930073498.rstore.property.factory.MutLiveDataFactory
 import com.x930073498.rstore.property.factory.MutableStateFlowFactory
 import com.x930073498.rstore.property.factory.TargetPropertyFactory
 import com.x930073498.rstore.property.initializer.EmptyInitializer
+import com.x930073498.rstore.property.initializer.ObservableLiveDataInitializer
+import com.x930073498.rstore.property.initializer.StateFlowInitializer
+import com.x930073498.rstore.property.initializer.TargetPropertyInitializer
 import com.x930073498.rstore.property.notifier.StandardNotifier
+import com.x930073498.rstore.property.transfer.InstanceTransfer
+import com.x930073498.rstore.property.transfer.LiveDataTransfer
+import com.x930073498.rstore.property.transfer.MutableStateFlowTransfer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.properties.ReadOnlyProperty
 import kotlin.properties.ReadWriteProperty
@@ -45,6 +52,7 @@ fun <V> IStoreProviderComponent.property(
     return NotifyPropertyDelegate(
         this,
         InstanceFactory(defaultValue),
+        InstanceTransfer(),
         EmptyInitializer(),
         StandardNotifier(),
         StateAsFeatureProvider(shouldSaveState, isAnchorProperty),
@@ -60,6 +68,7 @@ fun <V> IStoreProviderComponent.property(
     return NotifyPropertyDelegate(
         this,
         InstanceFactory(defaultValue),
+        InstanceTransfer(),
         EmptyInitializer(),
         StandardNotifier(),
         FeatureProvider(feature),
@@ -82,8 +91,9 @@ fun <V, T> IStoreProvider.property(
 ): ReadOnlyProperty<IStoreProviderComponent, T> {
     return NotifyPropertyDelegate(
         this,
-        TargetPropertyFactory(property, transform),
-        EmptyInitializer(),
+        TargetPropertyFactory(this, property, transform),
+        InstanceTransfer(),
+        TargetPropertyInitializer(property,transform),
         StandardNotifier(),
         StateAsFeatureProvider(shouldSaveState = false, isAnchorProperty = isAnchorProperty),
         equals
@@ -105,8 +115,9 @@ fun <V, T, P : IStoreProvider> P.property(
 ): ReadOnlyProperty<P, T> {
     return NotifyPropertyDelegate(
         this,
-        TargetPropertyFactory(property, transform),
-        EmptyInitializer(),
+        TargetPropertyFactory(this, property, transform),
+        InstanceTransfer(),
+        TargetPropertyInitializer(property,transform),
         StandardNotifier(),
         StateAsFeatureProvider(shouldSaveState = false, isAnchorProperty = isAnchorProperty),
         equals
@@ -128,6 +139,7 @@ fun <V> IStoreProvider.property(
     return NotifyPropertyDelegate(
         this,
         InstanceFactory(defaultValue),
+        InstanceTransfer(),
         EmptyInitializer(),
         StandardNotifier(),
         StateAsFeatureProvider(false, isAnchorProperty),
@@ -146,7 +158,8 @@ fun <V> IStoreProvider.flowProperty(
     return NotifyPropertyDelegate(
         this,
         MutableStateFlowFactory(defaultValue),
-        EmptyInitializer(),
+        MutableStateFlowTransfer(),
+        StateFlowInitializer(),
         StandardNotifier(),
         StateAsFeatureProvider(false, isAnchorProperty),
         equals
@@ -164,7 +177,8 @@ fun <V> IStoreProvider.liveDataProperty(
     return NotifyPropertyDelegate(
         this,
         MutLiveDataFactory(defaultValue),
-        EmptyInitializer(),
+        LiveDataTransfer(),
+        ObservableLiveDataInitializer(),
         StandardNotifier(),
         StateAsFeatureProvider(false, isAnchorProperty),
         equals
@@ -181,7 +195,8 @@ fun <V> IStoreProvider.listFlowProperty(
     return NotifyPropertyDelegate(
         this,
         MutableStateFlowFactory(emptyList()),
-        EmptyInitializer(),
+        MutableStateFlowTransfer(),
+        StateFlowInitializer(),
         StandardNotifier(),
         StateAsFeatureProvider(false, isAnchorProperty),
         ListEquals(equals)
@@ -198,7 +213,8 @@ fun <V> IStoreProvider.listLiveDataProperty(
     return NotifyPropertyDelegate(
         this,
         MutLiveDataFactory(null),
-        EmptyInitializer(),
+        LiveDataTransfer(),
+        ObservableLiveDataInitializer(),
         StandardNotifier(),
         StateAsFeatureProvider(false, isAnchorProperty),
         ListEquals(equals)
@@ -217,7 +233,8 @@ fun <V> IStoreProviderComponent.flowProperty(
     return NotifyPropertyDelegate(
         this,
         MutableStateFlowFactory(defaultValue),
-        EmptyInitializer(),
+        MutableStateFlowTransfer(),
+        StateFlowInitializer(),
         StandardNotifier(),
         StateAsFeatureProvider(shouldSaveState, isAnchorProperty),
         equals
@@ -236,7 +253,8 @@ fun <V> IStoreProviderComponent.liveDataProperty(
     return NotifyPropertyDelegate(
         this,
         MutLiveDataFactory(defaultValue),
-        EmptyInitializer(),
+        LiveDataTransfer(),
+        ObservableLiveDataInitializer(),
         StandardNotifier(),
         StateAsFeatureProvider(shouldSaveState, isAnchorProperty),
         equals
@@ -254,7 +272,8 @@ fun <V> IStoreProviderComponent.listFlowProperty(
     return NotifyPropertyDelegate(
         this,
         MutableStateFlowFactory(emptyList()),
-        EmptyInitializer(),
+        MutableStateFlowTransfer(),
+        StateFlowInitializer(),
         StandardNotifier(),
         StateAsFeatureProvider(shouldSaveState, isAnchorProperty),
         ListEquals(equals)
@@ -272,7 +291,8 @@ fun <V> IStoreProviderComponent.listLiveDataProperty(
     return NotifyPropertyDelegate(
         this,
         MutLiveDataFactory(null),
-        EmptyInitializer(),
+        LiveDataTransfer(),
+        ObservableLiveDataInitializer(),
         StandardNotifier(),
         StateAsFeatureProvider(shouldSaveState, isAnchorProperty),
         ListEquals(equals)
@@ -319,4 +339,9 @@ operator fun <T, V : IStoreProvider> T.setValue(
 ) = setPropertyValueByDelegate(thisRef, property, value)
 
 
-fun IStoreProvider.setFeature(property: KProperty<*>, feature: Feature)=setFeature(property, feature)
+fun IStoreProvider.setFeature(property: KProperty<*>, feature: Feature) =
+    setFeatureIImpl(property, feature)
+
+fun<V> IStoreProvider.setEquals(property: KProperty<V>, equals: Equals<V>){
+    setEqualsImpl(property, equals)
+}

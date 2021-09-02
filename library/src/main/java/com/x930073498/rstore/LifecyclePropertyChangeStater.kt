@@ -4,6 +4,7 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import com.x930073498.rstore.core.PropertyChangeStater
+import com.x930073498.rstore.core.ScopeHandler
 import com.x930073498.rstore.util.AwaitState
 
 class LifecyclePropertyChangeStater constructor(
@@ -13,22 +14,29 @@ class LifecyclePropertyChangeStater constructor(
     PropertyChangeStater {
     constructor(lifecycleOwner: LifecycleOwner, onCreateResume: Boolean) : this(lifecycleOwner,
         { onCreateResume })
-    override fun start(startHandle: AwaitState<Boolean>) {
-        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.INITIALIZED)) return
+
+    override fun start(handler: ScopeHandler) {
+        if (!lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.INITIALIZED)) return
         lifecycleOwner.lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onCreate(owner: LifecycleOwner) {
                 if (onCreateResume()) {
-                    startHandle.setState(true)
+                    handler.resume()
                 }
             }
 
             override fun onResume(owner: LifecycleOwner) {
-                startHandle.setState(true)
+                handler.resume()
+            }
+
+            override fun onPause(owner: LifecycleOwner) {
+                handler.pause()
             }
 
             override fun onDestroy(owner: LifecycleOwner) {
                 lifecycleOwner.lifecycle.removeObserver(this)
+                handler.dispose()
             }
         })
     }
+
 }

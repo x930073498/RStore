@@ -1,10 +1,7 @@
 package com.x930073498.rstore.core
 
-interface AnchorScopeLifecycleHandler : Disposable {
+interface AnchorScopeLifecycleHandler : ScopeHandler {
     fun launch()
 
-    fun resume()
-
-    fun pause()
 }
 

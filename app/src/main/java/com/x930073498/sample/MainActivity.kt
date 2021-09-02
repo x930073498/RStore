@@ -29,7 +29,6 @@ class MainActivity : AppCompatActivity(), StoreComponent {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         val binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         binding.viewPager.adapter = adapter
@@ -38,8 +37,12 @@ class MainActivity : AppCompatActivity(), StoreComponent {
 
 
     private fun setState(binding: ActivityMainBinding) {
+
         with(viewModel) {
             setFeature(::count,Feature.Anchor)
+            withProperty(::count){
+                println("enter this line count activity=$this")
+            }
             withAnchor(starter = LifecycleAnchorStarter()) {
                 onInitialized {
                     val awaitState = AwaitState.create(false)
@@ -67,14 +70,14 @@ class MainActivity : AppCompatActivity(), StoreComponent {
                 }
             }
         }
-//        lifecycleScope.launch {
-//            with(viewModel) {
-//                awaitUntil(::data) {
-//                    value > 5
-//                }
-//            }
-//            Toast.makeText(this@MainActivity, "data 数值大于5", Toast.LENGTH_SHORT).show()
-//        }
+        lifecycleScope.launch {
+            with(viewModel) {
+                awaitUntil(::data) {
+                    value > 5
+                }
+            }
+            Toast.makeText(this@MainActivity, "data 数值大于5", Toast.LENGTH_SHORT).show()
+        }
 
     }
 }

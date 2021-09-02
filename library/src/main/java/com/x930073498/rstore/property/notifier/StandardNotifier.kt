@@ -1,6 +1,8 @@
 package com.x930073498.rstore.property.notifier
 
+import com.x930073498.rstore.core.Feature
 import com.x930073498.rstore.core.IStoreProvider
+import com.x930073498.rstore.internal.hasFeature
 import com.x930073498.rstore.internal.notifyAnchorPropertyChanged
 import com.x930073498.rstore.internal.notifyPropertyChanged
 import com.x930073498.rstore.property.*
@@ -15,12 +17,8 @@ internal class StandardNotifier<T : IStoreProvider, Data, Source> :
         source: Source?
     ) {
         notifyPropertyChanged(property)
-        with(process) {
-            with(featureProvider) {
-                if (isAnchorProperty()) {
-                    notifyAnchorPropertyChanged(property)
-                }
-            }
+        if (hasFeature(property, Feature.Anchor)) {
+            notifyAnchorPropertyChanged(property)
         }
     }
 }

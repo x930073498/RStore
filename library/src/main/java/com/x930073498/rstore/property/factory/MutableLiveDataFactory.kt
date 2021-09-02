@@ -24,39 +24,14 @@ internal class ObservableLiveData<T> : MutableLiveData<T> {
 
 }
 
-class MutLiveDataFactory<T : IStoreProvider, Data>(private val defaultValue: Data?) :
-    SourceFactory<T, Data, MutableLiveData<Data>> {
-    override fun T.createSource(
-        property: KProperty<*>,
-        process: DelegateProcess<T, Data, MutableLiveData<Data>>,
+internal class MutLiveDataFactory<Data>(private val defaultValue: Data?) :
+    SourceFactory<Data, ObservableLiveData<Data>> {
+    override fun createSource(
         data: Data?
-    ): MutableLiveData<Data> {
-        var pre: Data? = data
-        val liveData = ObservableLiveData<Data>()
-        liveData.apply {
-            action = {
-                if (!process.equals(pre, this)) {
-                    pre = this
-                    with(process.notifier) {
-                        notify(property, process, pre, this@apply)
-                    }
-                }
-            }
-            if (data != null) {
-                postValue(data)
-            } else if (defaultValue != null) {
-                postValue(defaultValue)
-            }
-        }
-        return liveData
+    ): ObservableLiveData<Data> {
+        val temp=data?:defaultValue
+        return if (temp != null) ObservableLiveData<Data>(temp) else ObservableLiveData()
     }
 
-    override fun T.transform(
-        property: KProperty<*>,
-        process: DelegateProcess<T, Data, MutableLiveData<Data>>,
-        source: MutableLiveData<Data>
-    ): Data? {
-        return source.value
-    }
 
 }

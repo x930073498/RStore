@@ -15,9 +15,11 @@ import com.x930073498.rstore.property.NotifyPropertyDelegate
 import com.x930073498.rstore.property.factory.InstanceFactory
 import com.x930073498.rstore.property.initializer.EmptyInitializer
 import com.x930073498.rstore.property.notifier.StandardNotifier
+import com.x930073498.rstore.property.transfer.InstanceTransfer
 import com.x930073498.rstore.util.AwaitState
 import com.x930073498.rstore.util.HeartBeat
 import com.x930073498.rstore.util.awaitState
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -31,6 +33,7 @@ import kotlin.reflect.KProperty1
 private const val anchorPropertyEventChannelKey = "1306d9dd-5824-4341-af54-d45265fc2a1e"
 private const val anchorPropertyEventsFlowKey = "4dd1aea6-5f82-43be-bddd-d538b5961a38"
 private const val propertyFeatureKey = "842c085b-2b40-43db-950d-ba2274c80c53"
+private const val propertyEqualsKey = "403bb274-2e31-4a19-904f-cd39234739be"
 
 
 internal data class PropertyEvent(
@@ -62,7 +65,9 @@ internal fun <T : IStoreProvider, V> T.invokeAction(
     kProperty: KProperty<V>,
     action: V.() -> Unit
 ) {
-    valueFromProperty(kProperty)?.apply(action)
+    valueFromProperty(kProperty)?.apply{
+        action()
+    }
 }
 
 internal fun IStoreProvider.notifyPropertyChanged(property: KProperty<*>) {
@@ -103,7 +108,21 @@ internal fun <T : IStoreProvider, V> T.registerPropertyChangedListenerImpl(
     }
     val resumeAwait = AwaitState.create(false)
     val job = coroutineScope.launch(main) {
-        stater.start(resumeAwait)
+        val handler = object : ScopeHandler {
+            override fun resume() {
+                resumeAwait.setState(true)
+            }
+
+            override fun pause() {
+                resumeAwait.setState(false)
+            }
+
+            override fun dispose() {
+                coroutineContext[Job]?.cancel()
+            }
+
+        }
+        stater.start(handler)
         heartBeat.onBeat {
             resumeAwait.awaitState(true)
             invokeAction(property, action)
@@ -163,9 +182,6 @@ internal fun ISaveStateStore.dataSaveStateKey(property: KProperty<*>): String {
 internal fun dataPropertyKey(property: KProperty<*>): String {
     return "0ba5e5af-c5e9-4969-8164-a0c3e0c2185e_${property.name}_$\$"
 }
-
-
-
 
 
 internal fun propertyHeartBeatKey(property: KProperty<*>): String {
@@ -241,7 +257,8 @@ internal fun <T, V : IStoreProvider> setPropertyValueByDelegate(
             val key = dataPropertyKey(property)
             val feature = getFeature(property)
             val last = getInstance<T>(key)
-            if (last != value) {
+            val equals=getEqualsImpl(property)
+            if (!equals.equals(last,value)) {
                 put(key, value)
                 if (feature.hasFeature(Feature.SaveState) && this@with is ISaveStateStoreProvider) {
                     fromSaveStateStore {
@@ -269,6 +286,7 @@ internal fun <T> T.propertyFeatureImpl(
     return NotifyPropertyDelegate(
         component,
         InstanceFactory(this),
+        InstanceTransfer(),
         EmptyInitializer(),
         StandardNotifier(),
         FeatureProvider(defaultFeature),
@@ -278,6 +296,10 @@ internal fun <T> T.propertyFeatureImpl(
 
 private fun propertyFeatureKey(property: KProperty<*>): String {
     return "${propertyFeatureKey}_$\$_${property.name}_"
+}
+
+private fun propertyEqualsKey(property: KProperty<*>): String {
+    return "${propertyEqualsKey}_$\$_${property.name}_"
 }
 
 internal fun IStoreProvider.getFeature(
@@ -296,10 +318,26 @@ internal fun IStoreProvider.hasFeature(property: KProperty<*>, feature: Feature)
     return getFeature(property).hasFeature(feature)
 }
 
-internal fun IStoreProvider.setFeature(property: KProperty<*>, feature: Feature) {
+internal fun IStoreProvider.setFeatureIImpl(property: KProperty<*>, feature: Feature) {
     val key = propertyFeatureKey(property)
     fromStore {
         put(key, feature)
+    }
+}
+
+internal fun IStoreProvider.setEqualsImpl(property: KProperty<*>, equals: Equals<*>) {
+    val key = propertyEqualsKey(property)
+    fromStore {
+        put(key, equals)
+    }
+}
+
+internal fun <V> IStoreProvider.getEqualsImpl(property: KProperty<V>): Equals<V> {
+    val key = propertyEqualsKey(property)
+    return fromStore {
+        getInstance<Equals<V>>(key) ?: DefaultEquals<V>().apply {
+            put(key, this)
+        }
     }
 }
 

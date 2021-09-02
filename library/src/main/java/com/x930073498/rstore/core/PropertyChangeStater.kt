@@ -1,16 +1,14 @@
 package com.x930073498.rstore.core
 
-import com.x930073498.rstore.util.AwaitState
-
 fun interface PropertyChangeStater  {
 
     companion object:PropertyChangeStater{
-        override fun start(startHandle: AwaitState<Boolean>) {
-            startHandle.setState(true)
+        override fun start(handler: ScopeHandler) {
+            handler.resume()
         }
 
     }
-    fun start(startHandle:AwaitState<Boolean>)
+    fun start(handler:ScopeHandler)
 
 }
 
