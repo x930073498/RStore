@@ -27,7 +27,7 @@ class TestFragment : Fragment(R.layout.fragment_test), StoreComponent {
         super.onViewCreated(view, savedInstanceState)
         val viewBinding = FragmentTestBinding.bind(view)
 
-        viewModel.withAnchor(starter = LifecycleAnchorStarter(viewModel.data.value > 0)) {
+        viewModel.withAnchor(starter = LifecycleAnchorStarter(viewModel.count > 0)) {
             with(it) {
                 onInitialized {
                     viewBinding.root.setOnClickListener {

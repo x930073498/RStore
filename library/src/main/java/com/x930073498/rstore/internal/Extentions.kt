@@ -31,7 +31,6 @@ import kotlin.reflect.KProperty1
 private const val anchorPropertyEventChannelKey = "1306d9dd-5824-4341-af54-d45265fc2a1e"
 private const val anchorPropertyEventsFlowKey = "4dd1aea6-5f82-43be-bddd-d538b5961a38"
 private const val propertyFeatureKey = "842c085b-2b40-43db-950d-ba2274c80c53"
-private const val featureKey = "10a58042-3bed-4b82-854e-4cd5ea3306ce"
 
 
 internal data class PropertyEvent(
@@ -94,7 +93,7 @@ internal suspend fun <T : IStoreProvider, V> T.awaitUntilImpl(
 
 internal fun <T : IStoreProvider, V> T.registerPropertyChangedListenerImpl(
     property: KProperty<V>,
-    lifecycleOwner: LifecycleOwner? = null,
+    stater: PropertyChangeStater = PropertyChangeStater,
     action: V.() -> Unit
 ): Disposable {
     val heartBeat = fromStore {
@@ -103,40 +102,15 @@ internal fun <T : IStoreProvider, V> T.registerPropertyChangedListenerImpl(
         }
     }
     val resumeAwait = AwaitState.create(false)
-    var observer: LifecycleObserver? = null
     val job = coroutineScope.launch(main) {
-        if (lifecycleOwner != null) {
-            val _observer = object : DefaultLifecycleObserver {
-                override fun onPause(owner: LifecycleOwner) {
-                    resumeAwait.setState(false)
-                }
-
-                override fun onResume(owner: LifecycleOwner) {
-                    resumeAwait.setState(true)
-                }
-            }
-            observer = _observer
-            lifecycleOwner.lifecycle.addObserver(_observer)
-        } else {
-            resumeAwait.setState(true)
-        }
+        stater.start(resumeAwait)
         heartBeat.onBeat {
             resumeAwait.awaitState(true)
             invokeAction(property, action)
         }
-
     }
     return Disposable {
         job.cancel()
-        runCatching {
-            launchOnMain {
-                if (lifecycleOwner != null) {
-                    observer?.let {
-                        lifecycleOwner.lifecycle.removeObserver(it)
-                    }
-                }
-            }
-        }
     }
 }
 
@@ -147,7 +121,6 @@ internal fun IStoreProvider.notifyAnchorPropertyChanged(
     fromStore {
         val flow =
             getInstance<Channel<PropertyEvent>>(anchorPropertyEventChannelKey) ?: return@fromStore
-        appendFeature(property, PropertyChanged)
         flow.trySend(property.asEvent())
     }
 
@@ -166,6 +139,7 @@ internal fun <T : IStoreProvider> T.registerAnchorPropertyChangedListenerImpl(
         getOrCreate(anchorPropertyEventsFlowKey) {
             anchorPropertyEventChannel.receiveAsFlow()
                 .shareIn(coroutineScope, SharingStarted.Lazily)
+
         }
     }
     val scope = AnchorScopeImpl(this, anchorPropertyEventFlow, action)
@@ -190,17 +164,8 @@ internal fun dataPropertyKey(property: KProperty<*>): String {
     return "0ba5e5af-c5e9-4969-8164-a0c3e0c2185e_${property.name}_$\$"
 }
 
-internal fun IStoreProvider.setDefaultFeatureImpl(feature: Feature = Feature) {
-    fromStore {
-        put(featureKey, feature)
-    }
-}
 
-internal fun IStoreProvider.getDefaultFeature(): Feature {
-    return fromStore {
-        getInstance<Feature>(featureKey) ?: Feature
-    }
-}
+
 
 
 internal fun propertyHeartBeatKey(property: KProperty<*>): String {
@@ -212,13 +177,6 @@ internal operator fun Disposable.plus(disposable: Disposable) = Disposable {
     disposable.dispose()
 }
 
-
-internal fun <T : IStoreProvider> AnchorScope<T>.stareAtImpl(
-    vararg property: KProperty<*>,
-    action: () -> Unit
-) {
-    property.forEach { stareAt<T, Any?>(it) { action() } }
-}
 
 internal operator fun AnchorScopeLifecycleHandler.plus(disposable: Disposable): AnchorScopeLifecycleHandler {
     return object : AnchorScopeLifecycleHandler {
@@ -251,27 +209,21 @@ internal fun <T, V : IStoreProvider> T.propertyValueByDelegate(
         fromStore {
             val key = dataPropertyKey(property)
             var result = getInstance<T>(key)
-            val defaultFeature = getDefaultFeature()
-            val feature = getFeature(property).replace(defaultFeature)
-            setFeature(property, feature)
-            if (hasFeature(
-                    property,
-                    Feature.SaveState
-                ) && result == null && this@with is ISaveStateStoreProvider
+            val contains = contains(key)
+            val feature = getFeature(property)
+            if (!contains && feature.hasFeature(Feature.SaveState) && this@with is ISaveStateStoreProvider
             ) {
                 result = fromSaveStateStore {
                     getSavedState(dataSaveStateKey(property))
                 }
             }
             val _result = result ?: this@propertyValueByDelegate
-            val contains = contains(key)
-            put(key, _result)
             if (!contains) {
+                put(key, _result)
                 notifyPropertyChanged(property)
-                appendFeature(property, AnchorUnregister)
-            }
-            if (hasFeature(property, AnchorUnregister) && hasFeature(property, Feature.Anchor)) {
-                notifyAnchorPropertyChanged(property)
+                if (feature.hasFeature(Feature.Anchor)) {
+                    notifyAnchorPropertyChanged(property)
+                }
             }
             _result
         }
@@ -287,23 +239,17 @@ internal fun <T, V : IStoreProvider> setPropertyValueByDelegate(
     with(thisRef) {
         fromStore {
             val key = dataPropertyKey(property)
-            val defaultFeature = getDefaultFeature()
-            val feature = getFeature(property).replace(defaultFeature)
-            setFeature(property, feature)
+            val feature = getFeature(property)
             val last = getInstance<T>(key)
             if (last != value) {
                 put(key, value)
-                if (hasFeature(
-                        property,
-                        Feature.SaveState
-                    ) && this@with is ISaveStateStoreProvider
-                ) {
+                if (feature.hasFeature(Feature.SaveState) && this@with is ISaveStateStoreProvider) {
                     fromSaveStateStore {
                         saveState(dataSaveStateKey(property), value)
                     }
                 }
                 notifyPropertyChanged(property)
-                if (hasFeature(property, Feature.Anchor))
+                if (feature.hasFeature(Feature.Anchor))
                     notifyAnchorPropertyChanged(property)
             }
 

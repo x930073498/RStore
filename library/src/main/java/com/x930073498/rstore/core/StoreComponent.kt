@@ -11,12 +11,12 @@ import androidx.savedstate.SavedStateRegistryOwner
 import com.x930073498.rstore.LifecycleAnchorStarter
 import com.x930073498.rstore.SaveStateStoreViewModel
 import com.x930073498.rstore.app
+import com.x930073498.rstore.LifecyclePropertyChangeStater
 import com.x930073498.rstore.internal.awaitUntilImpl
 import com.x930073498.rstore.internal.registerAnchorPropertyChangedListenerImpl
 import com.x930073498.rstore.internal.registerPropertyChangedListenerImpl
 import com.x930073498.rstore.property.lazyField
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.plus
 import kotlin.coroutines.CoroutineContext
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
@@ -32,17 +32,15 @@ interface StoreComponent : SavedStateRegistryOwner, Coroutine {
     suspend fun <T : IStoreProvider, V> T.awaitUntil(
         property: KProperty<V>,
         predicate: suspend V.() -> Boolean
-    ) = with(this@StoreComponent) {
-        awaitUntilImpl(property, predicate)
-    }
+    ) = awaitUntilImpl(property, predicate)
+
 
     fun <T : IStoreProvider, V> T.withProperty(
         property: KProperty<V>,
-        lifecycleOwner: LifecycleOwner = defaultLifecycleOwner,
+        stater: PropertyChangeStater=LifecyclePropertyChangeStater(),
         action: V.() -> Unit
-    ) = with(this@StoreComponent) {
-        registerPropertyChangedListenerImpl(property, lifecycleOwner, action)
-    }
+    ) = registerPropertyChangedListenerImpl(property, stater, action)
+
 
 
     fun <T : IStoreProvider> T.withAnchor(
@@ -51,9 +49,8 @@ interface StoreComponent : SavedStateRegistryOwner, Coroutine {
             false
         ),
         action: AnchorScope<T>.(T) -> Unit
-    ) = with(this@StoreComponent) {
-        registerAnchorPropertyChangedListenerImpl(starter, action)
-    }
+    ) = registerAnchorPropertyChangedListenerImpl(starter, action)
+
 
 }
 
@@ -126,4 +123,11 @@ fun StoreComponent.LifecycleAnchorStarter(onCreateResume: () -> Boolean): Anchor
 
 fun StoreComponent.LifecycleAnchorStarter(onCreateResume: Boolean = false): AnchorStarter {
     return LifecycleAnchorStarter(defaultLifecycleOwner, onCreateResume)
+}
+fun StoreComponent.LifecyclePropertyChangeStater(onCreateResume: () -> Boolean): PropertyChangeStater {
+    return LifecyclePropertyChangeStater(defaultLifecycleOwner, onCreateResume)
+}
+
+fun StoreComponent.LifecyclePropertyChangeStater(onCreateResume: Boolean = false): PropertyChangeStater {
+    return LifecyclePropertyChangeStater(defaultLifecycleOwner, onCreateResume)
 }

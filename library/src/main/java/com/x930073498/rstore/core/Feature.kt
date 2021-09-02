@@ -3,6 +3,12 @@ package com.x930073498.rstore.core
 sealed class Feature(private val flag: Int) {
 
     companion object : Feature(0) {
+
+        fun Feature.hasFeature(): Boolean {
+            return flag != 0
+        }
+
+
         operator fun Feature.plus(feature: Feature): Feature {
             return WrapFeature(flag or feature.flag)
         }
@@ -27,12 +33,11 @@ sealed class Feature(private val flag: Int) {
 
     object SaveState : Feature(1)
     object Anchor : Feature(1 shl 1)
+    object All : Feature(0xfffffff)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as Feature
+        if (other !is Feature) return false
 
         if (flag != other.flag) return false
 
@@ -50,11 +55,7 @@ sealed class Feature(private val flag: Int) {
 
 }
 
-
-internal object PropertyChanged : Feature(1 shl 2)
-
 internal class WrapFeature(flag: Int) : Feature(flag)
 
-internal object AnchorUnregister : Feature(1 shl 3)
 
 

@@ -38,9 +38,8 @@ class MainActivity : AppCompatActivity(), StoreComponent {
 
 
     private fun setState(binding: ActivityMainBinding) {
-
         with(viewModel) {
-            setDefaultFeature(Feature.Anchor)
+            setFeature(::count,Feature.Anchor)
             withAnchor(starter = LifecycleAnchorStarter()) {
                 onInitialized {
                     val awaitState = AwaitState.create(false)
@@ -50,7 +49,7 @@ class MainActivity : AppCompatActivity(), StoreComponent {
                     launchOnIO {
                         while (true) {
                             awaitState.awaitState(true)
-                            delay(40)
+                            delay(400)
                             count++
                         }
                     }
@@ -68,14 +67,14 @@ class MainActivity : AppCompatActivity(), StoreComponent {
                 }
             }
         }
-        lifecycleScope.launch {
-            with(viewModel) {
-                awaitUntil(::data) {
-                    value > 5
-                }
-            }
-            Toast.makeText(this@MainActivity, "data 数值大于5", Toast.LENGTH_SHORT).show()
-        }
+//        lifecycleScope.launch {
+//            with(viewModel) {
+//                awaitUntil(::data) {
+//                    value > 5
+//                }
+//            }
+//            Toast.makeText(this@MainActivity, "data 数值大于5", Toast.LENGTH_SHORT).show()
+//        }
 
     }
 }

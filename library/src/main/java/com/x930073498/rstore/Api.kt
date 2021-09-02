@@ -3,7 +3,7 @@ package com.x930073498.rstore
 import androidx.lifecycle.MutableLiveData
 import com.x930073498.rstore.core.*
 import com.x930073498.rstore.internal.propertyValueByDelegate
-import com.x930073498.rstore.internal.setDefaultFeatureImpl
+import com.x930073498.rstore.internal.setFeature
 import com.x930073498.rstore.internal.setPropertyValueByDelegate
 import com.x930073498.rstore.property.FeatureProvider
 import com.x930073498.rstore.property.NotifyPropertyDelegate
@@ -305,8 +305,6 @@ fun <V> IStoreProvider.listProperty(
 ): ReadWriteProperty<IStoreProvider, List<V>> =
     property(emptyList(), isAnchorProperty, ListEquals(equals))
 
-fun <T> T.setDefaultFeature(feature: Feature) where  T : IStoreProvider = setDefaultFeatureImpl(feature)
-
 
 operator fun <T, V : IStoreProvider> T.getValue(
     thisRef: V,
@@ -321,3 +319,4 @@ operator fun <T, V : IStoreProvider> T.setValue(
 ) = setPropertyValueByDelegate(thisRef, property, value)
 
 
+fun IStoreProvider.setFeature(property: KProperty<*>, feature: Feature)=setFeature(property, feature)

@@ -10,11 +10,11 @@ class MainViewModel(application: Application, handle: SavedStateHandle) :
     val countOb by property(MainViewModel::count, isAnchorProperty = true) {
         "$this"
     }
-    var s by ""
-    var a by 0
+
 
     //    var count by property(0, shouldSaveState = true)
-    var count by 0.propertyFeature(Feature.SaveState)
+//    var count by 0.propertyFeature(Feature.Anchor)
+    var count by 0//.propertyFeature(Feature.Anchor)
 //    var count by 0.propertyFeature(Feature, Feature.SaveState)
     val data by flowProperty(count, isAnchorProperty = true, shouldSaveState = true)
     var list by listProperty<String>(isAnchorProperty = true)
