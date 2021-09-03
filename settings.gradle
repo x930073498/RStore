@@ -3,9 +3,11 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        jcenter() // Warning: this repository is going to shut down soon
     }
 }
 rootProject.name = "RStore"
 include ':app'
-include ':library'
+include ':rstore'
+include ':features'
+
+

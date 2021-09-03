@@ -19,10 +19,11 @@ import kotlinx.coroutines.launch
 
 
 @SuppressLint("SetTextI18n")
-class MainActivity : AppCompatActivity(), StoreComponent {
+class MainActivity : AppCompatActivity(), StoreComponent,TestFeature {
     private val viewModel by savedStateViewModels<MainViewModel>()
 
     private val adapter by lazyField {
+
         MainFragmentFragmentStateAdapter(supportFragmentManager, lifecycle)
     }
 
@@ -39,7 +40,6 @@ class MainActivity : AppCompatActivity(), StoreComponent {
     private fun setState(binding: ActivityMainBinding) {
 
         with(viewModel) {
-
             setFeature(::count, Feature.Anchor)
             withProperty(::count) {
                 println("enter this line count activity=$this")

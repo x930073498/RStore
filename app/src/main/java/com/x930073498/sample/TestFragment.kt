@@ -12,7 +12,7 @@ import com.x930073498.rstore.core.onInitialized
 import com.x930073498.rstore.core.stareAt
 import com.x930073498.sample.databinding.FragmentTestBinding
 
-class TestFragment : Fragment(R.layout.fragment_test), StoreComponent {
+class TestFragment : Fragment(R.layout.fragment_test), StoreComponent,TestFeature {
 
     private val viewModel by activityViewModels<MainViewModel>()
 
