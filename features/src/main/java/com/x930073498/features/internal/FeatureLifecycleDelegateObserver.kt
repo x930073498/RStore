@@ -13,6 +13,8 @@ internal class FeatureLifecycleDelegateObserver(
     FeatureLifecycleObserver, FragmentFeatureLifecycleObserver by fragmentFeatureLifecycleObserver,
     ActivityFeatureLifecycleObserver by activityFeatureLifecycleObserver,
     ApplicationFeatureLifecycleObserver by applicationFeatureLifecycleObserver {
+    constructor(observer: FeatureLifecycleObserver) : this(observer, observer, observer)
+
     val isFragmentFeature = fragmentFeatureLifecycleObserver != FragmentFeatureLifecycleObserver
     val isActivityFeature = activityFeatureLifecycleObserver != ActivityFeatureLifecycleObserver
     val isApplicationFeature =

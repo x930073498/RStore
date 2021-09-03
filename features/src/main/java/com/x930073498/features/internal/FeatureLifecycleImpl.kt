@@ -26,24 +26,43 @@ class FeatureLifecycleImpl() : FeatureLifecycle,
     FeatureLifecycleObserver, LifecycleEventObserver {
 
 
-    private val observers = arrayListOf<FeatureLifecycleObserver>()
+    private val observers = arrayListOf<FeatureLifecycleDelegateObserver>()
     private val lock = ReentrantLock()
-    private fun <R> doOnLock(action: MutableList<FeatureLifecycleObserver>.() -> R): R {
+    private fun <R> doOnLock(action: MutableList<FeatureLifecycleDelegateObserver>.() -> R): R {
         lock.lock()
         val result = action(observers)
         lock.unlock()
         return result
     }
 
-    private fun forEach(action: FeatureLifecycleObserver.() -> Unit) {
+    private fun forEach(
+        predicate: FeatureLifecycleDelegateObserver.() -> Boolean = { true },
+        action: FeatureLifecycleDelegateObserver.() -> Unit
+    ) {
         doOnLock {
-            forEach(action)
+            forEach {
+                if (predicate(it)) action(it)
+            }
         }
+    }
+
+    private fun forEachFragment(
+        action: FragmentFeatureLifecycleObserver.() -> Unit
+    ) {
+        forEach({ isFragmentFeature },action)
+    }
+
+    private fun forEachActivity(action: ActivityFeatureLifecycleObserver.() -> Unit) {
+        forEach({ isActivityFeature }, action)
+    }
+
+    private fun forEachApplication(action: ApplicationFeatureLifecycleObserver.() -> Unit){
+        forEach({isApplicationFeature},action)
     }
 
     override fun addObserver(observer: FeatureLifecycleObserver) {
         doOnLock {
-            add(observer)
+            add(FeatureLifecycleDelegateObserver(observer))
         }
     }
 
@@ -60,15 +79,13 @@ class FeatureLifecycleImpl() : FeatureLifecycle,
     }
 
     override fun removeObserver(observer: FeatureLifecycleObserver) {
-        doOnLock {
-            remove(observer)
-        }
+        removeObserver(observer as ActivityFeatureLifecycleObserver)
     }
 
     override fun removeObserver(observer: FragmentFeatureLifecycleObserver) {
         doOnLock {
             removeAll {
-                (it is FeatureLifecycleDelegateObserver && it.fragmentFeatureLifecycleObserver === observer) || (it === observer)
+                it.fragmentFeatureLifecycleObserver === observer
             }
         }
     }
@@ -76,7 +93,7 @@ class FeatureLifecycleImpl() : FeatureLifecycle,
     override fun removeObserver(observer: ActivityFeatureLifecycleObserver) {
         doOnLock {
             removeAll {
-                (it is FeatureLifecycleDelegateObserver && it.activityFeatureLifecycleObserver === observer) || (it === observer)
+                it.activityFeatureLifecycleObserver === observer
             }
         }
     }
@@ -84,149 +101,149 @@ class FeatureLifecycleImpl() : FeatureLifecycle,
     override fun removeObserver(observer: ApplicationFeatureLifecycleObserver) {
         doOnLock {
             removeAll {
-                (it is FeatureLifecycleDelegateObserver && it.applicationFeatureLifecycleObserver === observer) || (it === observer)
+                it.applicationFeatureLifecycleObserver === observer
             }
         }
     }
 
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
-        forEach {
+        forEachActivity {
             onActivityCreated(activity, savedInstanceState)
         }
     }
 
     override fun onActivityStarted(activity: Activity) {
-        forEach {
+        forEachActivity {
             onActivityStarted(activity)
         }
     }
 
     override fun onActivityResumed(activity: Activity) {
-        forEach { onActivityResumed(activity) }
+        forEachActivity { onActivityResumed(activity) }
     }
 
     override fun onActivityPaused(activity: Activity) {
-        forEach { onActivityPaused(activity) }
+        forEachActivity { onActivityPaused(activity) }
     }
 
     override fun onActivityStopped(activity: Activity) {
-        forEach { onActivityStopped(activity) }
+        forEachActivity { onActivityStopped(activity) }
     }
 
     override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {
-        forEach { onActivitySaveInstanceState(activity, outState) }
+        forEachActivity { onActivitySaveInstanceState(activity, outState) }
     }
 
     override fun onActivityDestroyed(activity: Activity) {
-        forEach { onActivityDestroyed(activity) }
+        forEachActivity { onActivityDestroyed(activity) }
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onActivityPreCreated(activity: Activity, savedInstanceState: Bundle?) {
-        forEach { onActivityPreCreated(activity, savedInstanceState) }
+        forEachActivity { onActivityPreCreated(activity, savedInstanceState) }
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onActivityPostCreated(activity: Activity, savedInstanceState: Bundle?) {
-        forEach { onActivityPostCreated(activity, savedInstanceState) }
+        forEachActivity { onActivityPostCreated(activity, savedInstanceState) }
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onActivityPreStarted(activity: Activity) {
-        forEach { onActivityPreStarted(activity) }
+        forEachActivity { onActivityPreStarted(activity) }
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onActivityPostStarted(activity: Activity) {
-        forEach { onActivityPostStarted(activity) }
+        forEachActivity { onActivityPostStarted(activity) }
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onActivityPreResumed(activity: Activity) {
-        forEach { onActivityPreResumed(activity) }
+        forEachActivity { onActivityPreResumed(activity) }
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onActivityPostResumed(activity: Activity) {
-        forEach { onActivityPostResumed(activity) }
+        forEachActivity { onActivityPostResumed(activity) }
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onActivityPrePaused(activity: Activity) {
-        forEach { onActivityPrePaused(activity) }
+        forEachActivity { onActivityPrePaused(activity) }
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onActivityPostPaused(activity: Activity) {
-        forEach { onActivityPostPaused(activity) }
+        forEachActivity { onActivityPostPaused(activity) }
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onActivityPreStopped(activity: Activity) {
-        forEach { onActivityPreStopped(activity) }
+        forEachActivity { onActivityPreStopped(activity) }
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onActivityPostStopped(activity: Activity) {
-        forEach { onActivityPostStopped(activity) }
+        forEachActivity { onActivityPostStopped(activity) }
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onActivityPreSaveInstanceState(activity: Activity, outState: Bundle) {
-        forEach { onActivityPreSaveInstanceState(activity, outState) }
+        forEachActivity { onActivityPreSaveInstanceState(activity, outState) }
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onActivityPostSaveInstanceState(activity: Activity, outState: Bundle) {
-        forEach { onActivityPostSaveInstanceState(activity, outState) }
+        forEachActivity { onActivityPostSaveInstanceState(activity, outState) }
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onActivityPreDestroyed(activity: Activity) {
-        forEach { onActivityPreDestroyed(activity) }
+        forEachActivity { onActivityPreDestroyed(activity) }
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onActivityPostDestroyed(activity: Activity) {
-        forEach { onActivityPostDestroyed(activity) }
+        forEachActivity { onActivityPostDestroyed(activity) }
     }
 
     override fun onApplicationCreated() {
-        forEach {
+        forEachApplication {
             onApplicationCreated()
         }
     }
 
     override fun onApplicationStarted() {
-        forEach {
+        forEachApplication {
             onApplicationStarted()
         }
     }
 
     override fun onApplicationResumed() {
-        forEach {
+        forEachApplication {
             onApplicationResumed()
         }
     }
 
     override fun onApplicationPaused() {
-        forEach {
+        forEachApplication {
             onApplicationPaused()
         }
     }
 
     override fun onApplicationStopped() {
-        forEach {
+        forEachApplication {
             onApplicationStopped()
         }
     }
 
     override fun onFragmentPreAttached(fm: FragmentManager, f: Fragment, context: Context) {
-        forEach { onFragmentPreAttached(fm, f, context) }
+        forEachFragment { onFragmentPreAttached(fm, f, context) }
     }
 
     override fun onFragmentAttached(fm: FragmentManager, f: Fragment, context: Context) {
-        forEach { onFragmentAttached(fm, f, context) }
+        forEachFragment { onFragmentAttached(fm, f, context) }
     }
 
     override fun onFragmentPreCreated(
@@ -234,11 +251,11 @@ class FeatureLifecycleImpl() : FeatureLifecycle,
         f: Fragment,
         savedInstanceState: Bundle?
     ) {
-        forEach { onFragmentPreCreated(fm, f, savedInstanceState) }
+        forEachFragment { onFragmentPreCreated(fm, f, savedInstanceState) }
     }
 
     override fun onFragmentCreated(fm: FragmentManager, f: Fragment, savedInstanceState: Bundle?) {
-        forEach { onFragmentCreated(fm, f, savedInstanceState) }
+        forEachFragment { onFragmentCreated(fm, f, savedInstanceState) }
     }
 
     override fun onFragmentActivityCreated(
@@ -246,7 +263,7 @@ class FeatureLifecycleImpl() : FeatureLifecycle,
         f: Fragment,
         savedInstanceState: Bundle?
     ) {
-        forEach { onFragmentActivityCreated(fm, f, savedInstanceState) }
+        forEachFragment { onFragmentActivityCreated(fm, f, savedInstanceState) }
     }
 
     override fun onFragmentViewCreated(
@@ -255,39 +272,39 @@ class FeatureLifecycleImpl() : FeatureLifecycle,
         v: View,
         savedInstanceState: Bundle?
     ) {
-        forEach { onFragmentViewCreated(fm, f, v, savedInstanceState) }
+        forEachFragment { onFragmentViewCreated(fm, f, v, savedInstanceState) }
     }
 
     override fun onFragmentStarted(fm: FragmentManager, f: Fragment) {
-        forEach { onFragmentStarted(fm, f) }
+        forEachFragment { onFragmentStarted(fm, f) }
     }
 
     override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
-        forEach { onFragmentResumed(fm, f) }
+        forEachFragment { onFragmentResumed(fm, f) }
     }
 
     override fun onFragmentPaused(fm: FragmentManager, f: Fragment) {
-        forEach { onFragmentPaused(fm, f) }
+        forEachFragment { onFragmentPaused(fm, f) }
     }
 
     override fun onFragmentStopped(fm: FragmentManager, f: Fragment) {
-        forEach { onFragmentStopped(fm, f) }
+        forEachFragment { onFragmentStopped(fm, f) }
     }
 
     override fun onFragmentSaveInstanceState(fm: FragmentManager, f: Fragment, outState: Bundle) {
-        forEach { onFragmentSaveInstanceState(fm, f, outState) }
+        forEachFragment { onFragmentSaveInstanceState(fm, f, outState) }
     }
 
     override fun onFragmentViewDestroyed(fm: FragmentManager, f: Fragment) {
-        forEach { onFragmentViewDestroyed(fm, f) }
+        forEachFragment { onFragmentViewDestroyed(fm, f) }
     }
 
     override fun onFragmentDestroyed(fm: FragmentManager, f: Fragment) {
-        forEach { onFragmentDestroyed(fm, f) }
+        forEachFragment { onFragmentDestroyed(fm, f) }
     }
 
     override fun onFragmentDetached(fm: FragmentManager, f: Fragment) {
-        forEach { onFragmentDetached(fm, f) }
+        forEachFragment { onFragmentDetached(fm, f) }
     }
 
     override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
