@@ -35,18 +35,22 @@ fun <T : Fragment, F : Feature> installFragmentFeature(
     feature: F,
     action: FragmentTargetData<T, F>.() -> Unit
 ) {
-    addInitializer(TargetClassInitializer(clazz, feature){
-        action(this as FragmentTargetData<T, F>)
-    })
+    addInitializer(
+        TargetClassInitializer(
+            clazz,
+            feature
+        ) { action(this as FragmentTargetData<T, F>) })
 }
 
 fun <F : Feature> installApplicationFeature(
     feature: F,
     action: ApplicationTargetData<Application, F>.() -> Unit
 ) {
-    addInitializer(TargetClassInitializer(Application::class.java, feature){
-        action(this as ApplicationTargetData<Application, F>)
-    })
+    addInitializer(
+        TargetClassInitializer(
+            Application::class.java,
+            feature
+        ) { action(this as ApplicationTargetData<Application, F>) })
 }
 
 

@@ -8,19 +8,11 @@ import com.x930073498.features.internal.LockList
 import com.x930073498.features.internal.doOnLock
 import com.x930073498.features.internal.forEach
 
-class ApplicationFeatureLifecycleImpl(
-    private val target: FeatureTarget.ApplicationTarget,
-    initializers: LockList<Initializer>
-) :
+class ApplicationFeatureLifecycleImpl() :
     ApplicationFeatureLifecycle,
     ApplicationFeatureLifecycleObserver,
     LockList<ApplicationFeatureLifecycleObserver> by LockList.create() {
-    init {
-        initializers.forEach {
-            init(target)
-        }
 
-    }
 
     override fun addObserver(observer: ApplicationFeatureLifecycleObserver) {
         doOnLock {

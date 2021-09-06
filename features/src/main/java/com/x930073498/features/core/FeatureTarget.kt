@@ -10,39 +10,59 @@ import com.x930073498.features.internal.LockList
 import com.x930073498.features.internal.activity.ActivityFeatureLifecycleImpl
 import com.x930073498.features.internal.application.ApplicationFeatureLifecycleImpl
 import com.x930073498.features.internal.doOnLock
+import com.x930073498.features.internal.forEach
 import com.x930073498.features.internal.fragment.FragmentFeatureLifecycleImpl
 
 sealed class FeatureTarget(open val data: Any) {
     abstract val featureLifecycle: FeatureLifecycle
 
     internal fun setup(initializer: Initializer) {
-            initializer.init(this@FeatureTarget)
+        initializer.init(this@FeatureTarget)
     }
 
-    class FragmentTarget(
+    internal fun setup(initializers: LockList<Initializer>) {
+        initializers.forEach {
+            init(this@FeatureTarget)
+        }
+    }
+
+    class FragmentTarget internal constructor(
         override val data: Fragment,
-        private val initializers: LockList<Initializer>
     ) :
         FeatureTarget(data) {
-        override val featureLifecycle: FragmentFeatureLifecycle =
-            FragmentFeatureLifecycleImpl(this, initializers)
+        private val _featureLifecycle = FragmentFeatureLifecycleImpl()
+
+        override val featureLifecycle: FragmentFeatureLifecycle
+            get() = _featureLifecycle
 
 
     }
 
-    class ActivityTarget(
+    class ActivityTarget internal constructor(
         override val data: Activity,
-        initializers: LockList<Initializer>
     ) : FeatureTarget(data) {
-        override val featureLifecycle: ActivityFeatureLifecycle =
-            ActivityFeatureLifecycleImpl(this, initializers)
+        private val _featureLifecycle = ActivityFeatureLifecycleImpl()
+
+
+        override val featureLifecycle: ActivityFeatureLifecycle
+            get() = _featureLifecycle
+
+
+        override fun toString(): String {
+            return "ActivityTarget(data=$data, _featureLifecycle=$_featureLifecycle, featureLifecycle=$featureLifecycle)"
+        }
+
+
     }
 
-    class ApplicationTarget(
+    class ApplicationTarget internal constructor(
         override val data: Application,
-        initializers: LockList<Initializer>
     ) : FeatureTarget(data) {
-        override val featureLifecycle: ApplicationFeatureLifecycle =
-            ApplicationFeatureLifecycleImpl(this, initializers)
+        private val _featureLifecycle = ApplicationFeatureLifecycleImpl()
+
+
+        override val featureLifecycle: ApplicationFeatureLifecycle
+            get() = _featureLifecycle
+
     }
 }

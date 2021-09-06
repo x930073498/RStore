@@ -8,8 +8,12 @@ import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 
+/**
+ * 带有pre/post开头的方法需要android 10及以上的机型支持
+ */
 interface ActivityFeatureLifecycleObserver {
-    companion object:ActivityFeatureLifecycleObserver
+    companion object : ActivityFeatureLifecycleObserver
+
     fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
 
     }
@@ -38,51 +42,6 @@ interface ActivityFeatureLifecycleObserver {
 
     }
 
-    @RequiresApi(29)
-    fun onActivityPreCreated(activity: Activity, savedInstanceState: Bundle?) {
-    }
-    @RequiresApi(29)
-    fun onActivityPostCreated(activity: Activity, savedInstanceState: Bundle?) {
-    }
-    @RequiresApi(29)
-    fun onActivityPreStarted(activity: Activity) {
-    }
-
-    @RequiresApi(29)
-    fun onActivityPostStarted(activity: Activity) {
-    }
-
-    @RequiresApi(29)
-    fun onActivityPreResumed(activity: Activity) {
-    }
-
-    @RequiresApi(29)
-    fun onActivityPostResumed(activity: Activity) {
-    }
-    @RequiresApi(29)
-    fun onActivityPrePaused(activity: Activity) {
-    }
-    @RequiresApi(29)
-    fun onActivityPostPaused(activity: Activity) {
-    }
-    @RequiresApi(29)
-    fun onActivityPreStopped(activity: Activity) {
-    }
-    @RequiresApi(29)
-    fun onActivityPostStopped(activity: Activity) {
-    }
-    @RequiresApi(29)
-    fun onActivityPreSaveInstanceState(activity: Activity, outState: Bundle) {
-    }
-    @RequiresApi(29)
-    fun onActivityPostSaveInstanceState(activity: Activity, outState: Bundle) {
-    }
-    @RequiresApi(29)
-    fun onActivityPreDestroyed(activity: Activity) {
-    }
-    @RequiresApi(29)
-    fun onActivityPostDestroyed(activity: Activity) {
-    }
 
 
 }

@@ -18,9 +18,9 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.x930073498.features.core.FeatureTarget
 import com.x930073498.features.core.Initializer
-import com.x930073498.features.core.activity.ActivityFeatureLifecycleObserver
 import com.x930073498.features.core.application.ApplicationFeatureLifecycleObserver
 import com.x930073498.features.core.fragment.FragmentFeatureLifecycleObserver
+import com.x930073498.features.internal.activity.ActivityFeatureLifecycleImpl
 import java.util.concurrent.locks.ReentrantLock
 
 object Features : Application.ActivityLifecycleCallbacks,
@@ -94,10 +94,10 @@ object Features : Application.ActivityLifecycleCallbacks,
 
     private fun doOnAction(
         activity: Activity,
-        action: ActivityFeatureLifecycleObserver.() -> Unit
+        action: ActivityFeatureLifecycleImpl.() -> Unit
     ) {
         activityLock.lock()
-        val target = activityMap[activity]?.featureLifecycle as? ActivityFeatureLifecycleObserver
+        val target = activityMap[activity]?.featureLifecycle as? ActivityFeatureLifecycleImpl
         if (target != null) {
             action(target)
         }
@@ -120,7 +120,10 @@ object Features : Application.ActivityLifecycleCallbacks,
         doOnFragment {
             if (!fragmentMap.contains(fragment)) {
                 fragmentMap[fragment] =
-                    FeatureTarget.FragmentTarget(fragment, initializers)
+                    FeatureTarget.FragmentTarget(fragment).apply {
+                        setup(initializers)
+                    }
+
                 fragment.childFragmentManager.registerFragmentLifecycleCallbacks(this, false)
             }
         }
@@ -136,7 +139,9 @@ object Features : Application.ActivityLifecycleCallbacks,
         doOnActivity {
             if (!activityMap.contains(activity)) {
                 activityMap[activity] =
-                    FeatureTarget.ActivityTarget(activity, initializers)
+                    FeatureTarget.ActivityTarget(activity).apply {
+                        setup(initializers)
+                    }
                 if (activity is FragmentActivity) {
                     activity.supportFragmentManager.registerFragmentLifecycleCallbacks(this, false)
                 }
@@ -153,7 +158,9 @@ object Features : Application.ActivityLifecycleCallbacks,
     internal fun setup(application: Application) {
         applicationLock.lock()
         this.application = application
-        applicationTarget = FeatureTarget.ApplicationTarget(application, initializers)
+        applicationTarget = FeatureTarget.ApplicationTarget(application).apply {
+            setup(initializers)
+        }
         application.registerActivityLifecycleCallbacks(this)
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
         applicationLock.unlock()

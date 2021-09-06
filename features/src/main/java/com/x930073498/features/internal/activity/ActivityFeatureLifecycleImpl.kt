@@ -8,22 +8,16 @@ import com.x930073498.features.core.FeatureTarget
 import com.x930073498.features.core.Initializer
 import com.x930073498.features.core.activity.ActivityFeatureLifecycle
 import com.x930073498.features.core.activity.ActivityFeatureLifecycleObserver
+import com.x930073498.features.core.activity.ActivityFeatureStateObserver
 import com.x930073498.features.internal.LockList
 import com.x930073498.features.internal.doOnLock
 import com.x930073498.features.internal.forEach
 
-class ActivityFeatureLifecycleImpl(
-    private val target: FeatureTarget.ActivityTarget,
-    initializers: LockList<Initializer>
-) :
+class ActivityFeatureLifecycleImpl() :
     ActivityFeatureLifecycle,
     ActivityFeatureLifecycleObserver,
     LockList<ActivityFeatureLifecycleObserver> by LockList.create() {
-    init {
-        initializers.forEach {
-            init(target)
-        }
-    }
+
 
     override fun addObserver(observer: ActivityFeatureLifecycleObserver) {
         doOnLock {
@@ -80,100 +74,114 @@ class ActivityFeatureLifecycleImpl(
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    override fun onActivityPreCreated(activity: Activity, savedInstanceState: Bundle?) {
+    fun onActivityPreCreated(activity: Activity, savedInstanceState: Bundle?) {
         forEach {
-            onActivityPreCreated(activity, savedInstanceState)
+            if (this is ActivityFeatureStateObserver)
+                onActivityPreCreated(activity, savedInstanceState)
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    override fun onActivityPostCreated(activity: Activity, savedInstanceState: Bundle?) {
+    fun onActivityPostCreated(activity: Activity, savedInstanceState: Bundle?) {
         forEach {
-            onActivityPostCreated(activity, savedInstanceState)
+            if (this is ActivityFeatureStateObserver)
+                onActivityPostCreated(activity, savedInstanceState)
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    override fun onActivityPreStarted(activity: Activity) {
+    fun onActivityPreStarted(activity: Activity) {
         forEach {
-            onActivityPreStarted(activity)
+            if (this is ActivityFeatureStateObserver)
+                onActivityPreStarted(activity)
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    override fun onActivityPostStarted(activity: Activity) {
+    fun onActivityPostStarted(activity: Activity) {
         forEach {
-            onActivityPostStarted(activity)
+            if (this is ActivityFeatureStateObserver)
+                onActivityPostStarted(activity)
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    override fun onActivityPreResumed(activity: Activity) {
+    fun onActivityPreResumed(activity: Activity) {
         forEach {
-            onActivityPreResumed(activity)
+            if (this is ActivityFeatureStateObserver)
+                onActivityPreResumed(activity)
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    override fun onActivityPostResumed(activity: Activity) {
+    fun onActivityPostResumed(activity: Activity) {
         forEach {
-            onActivityPostResumed(activity)
+            if (this is ActivityFeatureStateObserver)
+                onActivityPostResumed(activity)
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    override fun onActivityPrePaused(activity: Activity) {
+    fun onActivityPrePaused(activity: Activity) {
         forEach {
-            onActivityPrePaused(activity)
+            if (this is ActivityFeatureStateObserver)
+                onActivityPrePaused(activity)
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    override fun onActivityPostPaused(activity: Activity) {
+    fun onActivityPostPaused(activity: Activity) {
         forEach {
-            onActivityPostPaused(activity)
+            if (this is ActivityFeatureStateObserver)
+                onActivityPostPaused(activity)
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    override fun onActivityPreStopped(activity: Activity) {
+    fun onActivityPreStopped(activity: Activity) {
         forEach {
-            onActivityPreStopped(activity)
+            if (this is ActivityFeatureStateObserver)
+                onActivityPreStopped(activity)
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    override fun onActivityPostStopped(activity: Activity) {
+    fun onActivityPostStopped(activity: Activity) {
         forEach {
-            onActivityPostStopped(activity)
+            if (this is ActivityFeatureStateObserver)
+                onActivityPostStopped(activity)
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    override fun onActivityPreSaveInstanceState(activity: Activity, outState: Bundle) {
+    fun onActivityPreSaveInstanceState(activity: Activity, outState: Bundle) {
         forEach {
-            onActivityPreSaveInstanceState(activity, outState)
+            if (this is ActivityFeatureStateObserver)
+                onActivityPreSaveInstanceState(activity, outState)
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    override fun onActivityPostSaveInstanceState(activity: Activity, outState: Bundle) {
+    fun onActivityPostSaveInstanceState(activity: Activity, outState: Bundle) {
         forEach {
-            onActivityPostSaveInstanceState(activity, outState)
+            if (this is ActivityFeatureStateObserver)
+                onActivityPostSaveInstanceState(activity, outState)
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    override fun onActivityPreDestroyed(activity: Activity) {
+    fun onActivityPreDestroyed(activity: Activity) {
         forEach {
-            onActivityPreDestroyed(activity)
+            if (this is ActivityFeatureStateObserver)
+                onActivityPreDestroyed(activity)
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    override fun onActivityPostDestroyed(activity: Activity) {
+    fun onActivityPostDestroyed(activity: Activity) {
         forEach {
-            onActivityPostDestroyed(activity)
+            if (this is ActivityFeatureStateObserver)
+                onActivityPostDestroyed(activity)
         }
     }
 }

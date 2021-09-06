@@ -13,18 +13,11 @@ import com.x930073498.features.internal.LockList
 import com.x930073498.features.internal.doOnLock
 import com.x930073498.features.internal.forEach
 
-class FragmentFeatureLifecycleImpl(
-    private val target: FeatureTarget.FragmentTarget,
-    private val initializers: LockList<Initializer>
-) :
+class FragmentFeatureLifecycleImpl() :
     FragmentFeatureLifecycle,
     FragmentFeatureLifecycleObserver,
     LockList<FragmentFeatureLifecycleObserver> by LockList.create() {
-    init {
-        initializers.forEach {
-            init(target)
-        }
-    }
+
 
 
     override fun addObserver(observer: FragmentFeatureLifecycleObserver) {
