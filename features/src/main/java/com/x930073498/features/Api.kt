@@ -1,39 +1,52 @@
 package com.x930073498.features
 
 import android.app.Activity
+import android.app.Application
 import androidx.fragment.app.Fragment
 import com.x930073498.features.core.Feature
-import com.x930073498.features.core.FeatureInstaller
-import com.x930073498.features.core.activity.ActivityFeatureInstaller
-import com.x930073498.features.core.application.ApplicationFeatureInstaller
-import com.x930073498.features.core.fragment.FragmentFeatureInstaller
-import com.x930073498.features.internal.FeatureRepository
+import com.x930073498.features.core.FeatureTarget
+import com.x930073498.features.core.Initializer
+import com.x930073498.features.extentions.*
+import com.x930073498.features.extentions.InstanceFeatureInitializer
+import com.x930073498.features.extentions.TargetClassInitializer
+import com.x930073498.features.internal.Features
 
 
-inline fun <reified T : Feature> installFeature(installer: FeatureInstaller<T>) {
-    FeatureRepository.addFeatureInstaller(T::class.java, installer)
-}
-inline fun <reified T : Feature> installActivityFeature(installer: ActivityFeatureInstaller<T>) {
-    FeatureRepository.addFeatureInstaller(T::class.java, installer)
-}
-inline fun <reified T : Feature> installFragmentFeature(installer: FragmentFeatureInstaller<T>) {
-    FeatureRepository.addFeatureInstaller(T::class.java, installer)
-}
-fun <T:Feature> installApplicationFeature(feature: T,installer:ApplicationFeatureInstaller<T>){
-    FeatureRepository.addFeatureInstaller(feature,installer)
+fun addInitializer(initializer: Initializer) {
+    Features.addInitializer(initializer)
 }
 
+inline fun <reified F : Feature> installInstanceFeature(noinline action: F.(FeatureTarget) -> Unit) {
+    addInitializer(InstanceFeatureInitializer(F::class.java, action))
+}
 
-inline fun <T : Feature, reified V : Activity> installFeature(
-    feature: T,
-    installer: ActivityFeatureInstaller<T>
+fun <T : Activity, F : Feature> installActivityFeature(
+    clazz: Class<T>,
+    feature: F,
+    action: ActivityTargetData<T, F>.() -> Unit
 ) {
-    FeatureRepository.addFeatureInstaller(V::class.java, feature, installer)
+    addInitializer(TargetClassInitializer(clazz, feature) {
+        action(this as ActivityTargetData<T, F>)
+    })
 }
 
-inline fun <T : Feature, reified V : Fragment> installFeature(
-    feature: T,
-    installer: FragmentFeatureInstaller<T>
+fun <T : Fragment, F : Feature> installFragmentFeature(
+    clazz: Class<T>,
+    feature: F,
+    action: FragmentTargetData<T, F>.() -> Unit
 ) {
-    FeatureRepository.addFeatureInstaller(V::class.java, feature, installer)
+    addInitializer(TargetClassInitializer(clazz, feature){
+        action(this as FragmentTargetData<T, F>)
+    })
 }
+
+fun <F : Feature> installApplicationFeature(
+    feature: F,
+    action: ApplicationTargetData<Application, F>.() -> Unit
+) {
+    addInitializer(TargetClassInitializer(Application::class.java, feature){
+        action(this as ApplicationTargetData<Application, F>)
+    })
+}
+
+

@@ -3,10 +3,7 @@ package com.x930073498.sample
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.SavedStateViewModelFactory
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.x930073498.rstore.*
 import com.x930073498.rstore.core.*
@@ -19,7 +16,7 @@ import kotlinx.coroutines.launch
 
 
 @SuppressLint("SetTextI18n")
-class MainActivity : AppCompatActivity(), StoreComponent,TestFeature {
+class MainActivity : AppCompatActivity(), StoreComponent, TestFeature {
     private val viewModel by savedStateViewModels<MainViewModel>()
 
     private val adapter by lazyField {
@@ -34,6 +31,7 @@ class MainActivity : AppCompatActivity(), StoreComponent,TestFeature {
         setContentView(binding.root)
         binding.viewPager.adapter = adapter
         setState(binding)
+
     }
 
 
@@ -80,5 +78,9 @@ class MainActivity : AppCompatActivity(), StoreComponent,TestFeature {
             Toast.makeText(this@MainActivity, "data 数值大于5", Toast.LENGTH_SHORT).show()
         }
 
+    }
+
+    override fun print() {
+        println("enter this line 978484")
     }
 }

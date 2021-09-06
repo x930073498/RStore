@@ -3,7 +3,7 @@ package com.x930073498.features
 import android.app.Application
 import android.content.Context
 import androidx.startup.Initializer
-import com.x930073498.features.internal.LifecycleCallback
+import com.x930073498.features.internal.Features
 
 
 internal lateinit var app: Application
@@ -13,7 +13,7 @@ class FeatureStartup : Initializer<Application> {
         context as Application
         if (!::app.isInitialized) {
             app = context
-            LifecycleCallback.register(app)
+            Features.setup(app)
         }
         return app
     }
