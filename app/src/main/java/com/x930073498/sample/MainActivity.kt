@@ -12,6 +12,7 @@ import com.x930073498.rstore.util.AwaitState
 import com.x930073498.rstore.util.awaitState
 import com.x930073498.sample.databinding.ActivityMainBinding
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 
@@ -24,7 +25,6 @@ class MainActivity : AppCompatActivity(), StoreComponent, TestFeature {
         MainFragmentFragmentStateAdapter(supportFragmentManager, lifecycle)
     }
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val binding = ActivityMainBinding.inflate(layoutInflater)
@@ -36,7 +36,6 @@ class MainActivity : AppCompatActivity(), StoreComponent, TestFeature {
 
 
     private fun setState(binding: ActivityMainBinding) {
-
         with(viewModel) {
             setFeature(::count, Feature.Anchor)
             withProperty(::count) {
@@ -49,7 +48,7 @@ class MainActivity : AppCompatActivity(), StoreComponent, TestFeature {
                         awaitState.setState(!awaitState.state)
                     }
                     launchOnIO {
-                        while (true) {
+                        while (isActive) {
                             awaitState.awaitState(true)
                             delay(400)
                             count++
@@ -81,6 +80,6 @@ class MainActivity : AppCompatActivity(), StoreComponent, TestFeature {
     }
 
     override fun print() {
-        println("enter this line 978484")
+        println("enter this line activity=$this")
     }
 }

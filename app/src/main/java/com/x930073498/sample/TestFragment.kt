@@ -42,6 +42,6 @@ class TestFragment : Fragment(R.layout.fragment_test), StoreComponent,TestFeatur
     }
 
     override fun print() {
-        println("enter this line 963")
+        println("enter this line fragment=$this")
     }
 }

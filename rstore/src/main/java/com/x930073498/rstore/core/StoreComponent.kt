@@ -23,7 +23,7 @@ import kotlin.reflect.KProperty
 
 interface StoreComponent : SavedStateRegistryOwner, Coroutine {
     override val coroutineScope: CoroutineScope
-        get() = CoroutineScope(storeProvider.coroutineScope.coroutineContext + lifecycleScope.coroutineContext)
+        get() = lifecycleScope
     override val io: CoroutineContext
         get() = storeProvider.io
     override val main: CoroutineContext
@@ -37,10 +37,9 @@ interface StoreComponent : SavedStateRegistryOwner, Coroutine {
 
     fun <T : IStoreProvider, V> T.withProperty(
         property: KProperty<V>,
-        stater: PropertyChangeStater=LifecyclePropertyChangeStater(),
+        stater: PropertyChangeStater = LifecyclePropertyChangeStater(),
         action: V.() -> Unit
     ) = registerPropertyChangedListenerImpl(property, stater, action)
-
 
 
     fun <T : IStoreProvider> T.withAnchor(
@@ -117,17 +116,30 @@ val StoreComponent.context: Context by lazyField {
     }
 }
 
-fun StoreComponent.LifecycleAnchorStarter(onCreateResume: () -> Boolean): AnchorStarter {
-    return LifecycleAnchorStarter(defaultLifecycleOwner, onCreateResume)
+fun StoreComponent.LifecycleAnchorStarter(
+    lifecycleOwner: LifecycleOwner = defaultLifecycleOwner,
+    onCreateResume: () -> Boolean
+): AnchorStarter {
+    return LifecycleAnchorStarter(lifecycleOwner, onCreateResume)
 }
 
-fun StoreComponent.LifecycleAnchorStarter(onCreateResume: Boolean = false): AnchorStarter {
-    return LifecycleAnchorStarter(defaultLifecycleOwner, onCreateResume)
-}
-fun StoreComponent.LifecyclePropertyChangeStater(onCreateResume: () -> Boolean): PropertyChangeStater {
-    return LifecyclePropertyChangeStater(defaultLifecycleOwner, onCreateResume)
+fun StoreComponent.LifecycleAnchorStarter(
+    onCreateResume: Boolean = false,
+    lifecycleOwner: LifecycleOwner = defaultLifecycleOwner,
+): AnchorStarter {
+    return LifecycleAnchorStarter(lifecycleOwner, onCreateResume)
 }
 
-fun StoreComponent.LifecyclePropertyChangeStater(onCreateResume: Boolean = false): PropertyChangeStater {
-    return LifecyclePropertyChangeStater(defaultLifecycleOwner, onCreateResume)
+fun StoreComponent.LifecyclePropertyChangeStater(
+    lifecycleOwner: LifecycleOwner = defaultLifecycleOwner,
+    onCreateResume: () -> Boolean
+): PropertyChangeStater {
+    return LifecyclePropertyChangeStater(lifecycleOwner, onCreateResume)
+}
+
+fun StoreComponent.LifecyclePropertyChangeStater(
+    onCreateResume: Boolean = false,
+    lifecycleOwner: LifecycleOwner = defaultLifecycleOwner,
+): PropertyChangeStater {
+    return LifecyclePropertyChangeStater(lifecycleOwner, onCreateResume)
 }

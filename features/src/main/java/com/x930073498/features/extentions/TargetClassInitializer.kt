@@ -2,11 +2,11 @@
 
 package com.x930073498.features.extentions
 
-import com.x930073498.features.core.Feature
+import com.x930073498.features.core.IFeature
 import com.x930073498.features.core.FeatureTarget
 import com.x930073498.features.core.Initializer
 
-open class TargetData<T, F : Feature>(
+open class TargetData<T, F : IFeature>(
     open val data: T,
     open val feature: F,
     open val target: FeatureTarget
@@ -17,19 +17,19 @@ open class TargetData<T, F : Feature>(
 }
 
 
-class ApplicationTargetData<T, F : Feature>(
+class ApplicationTargetData<T, F : IFeature>(
     override val data: T,
     override val feature: F,
     override val target: FeatureTarget.ApplicationTarget
 ) : TargetData<T, F>(data, feature, target)
 
-class ActivityTargetData<T, F : Feature>(
+class ActivityTargetData<T, F : IFeature>(
     override val data: T,
     override val feature: F,
     override val target: FeatureTarget.ActivityTarget
 ) : TargetData<T, F>(data, feature, target)
 
-class FragmentTargetData<T, F : Feature>(
+class FragmentTargetData<T, F : IFeature>(
     override val data: T,
     override val feature: F,
     override val target: FeatureTarget.FragmentTarget
@@ -37,7 +37,7 @@ class FragmentTargetData<T, F : Feature>(
 
 
 @PublishedApi
-internal class TargetClassInitializer<T, F : Feature>(
+internal class TargetClassInitializer<T, F : IFeature>(
     private val targetClass: Class<T>,
     private val feature: F,
     private val action: TargetData<T, F>.() -> Unit

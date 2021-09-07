@@ -3,7 +3,7 @@ package com.x930073498.features
 import android.app.Activity
 import android.app.Application
 import androidx.fragment.app.Fragment
-import com.x930073498.features.core.Feature
+import com.x930073498.features.core.IFeature
 import com.x930073498.features.core.FeatureTarget
 import com.x930073498.features.core.Initializer
 import com.x930073498.features.extentions.*
@@ -16,11 +16,11 @@ fun addInitializer(initializer: Initializer) {
     Features.addInitializer(initializer)
 }
 
-inline fun <reified F : Feature> installInstanceFeature(noinline action: F.(FeatureTarget) -> Unit) {
+inline fun <reified F : IFeature> installInstanceFeature(noinline action: F.(FeatureTarget) -> Unit) {
     addInitializer(InstanceFeatureInitializer(F::class.java, action))
 }
 
-fun <T : Activity, F : Feature> installActivityFeature(
+fun <T : Activity, F : IFeature> installActivityFeature(
     clazz: Class<T>,
     feature: F,
     action: ActivityTargetData<T, F>.() -> Unit
@@ -30,7 +30,7 @@ fun <T : Activity, F : Feature> installActivityFeature(
     })
 }
 
-fun <T : Fragment, F : Feature> installFragmentFeature(
+fun <T : Fragment, F : IFeature> installFragmentFeature(
     clazz: Class<T>,
     feature: F,
     action: FragmentTargetData<T, F>.() -> Unit
@@ -42,7 +42,7 @@ fun <T : Fragment, F : Feature> installFragmentFeature(
         ) { action(this as FragmentTargetData<T, F>) })
 }
 
-fun <F : Feature> installApplicationFeature(
+fun <F : IFeature> installApplicationFeature(
     feature: F,
     action: ApplicationTargetData<Application, F>.() -> Unit
 ) {

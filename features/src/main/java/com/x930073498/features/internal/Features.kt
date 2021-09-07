@@ -157,10 +157,12 @@ object Features : Application.ActivityLifecycleCallbacks,
 
     internal fun setup(application: Application) {
         applicationLock.lock()
-        this.application = application
-        applicationTarget = FeatureTarget.ApplicationTarget(application).apply {
-            setup(initializers)
-        }
+        if (!this::application.isInitialized)
+            this.application = application
+        if (!this::applicationTarget.isInitialized)
+            applicationTarget = FeatureTarget.ApplicationTarget(application).apply {
+                setup(initializers)
+            }
         application.registerActivityLifecycleCallbacks(this)
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
         applicationLock.unlock()
