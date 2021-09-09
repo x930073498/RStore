@@ -424,25 +424,25 @@ object Features : Application.ActivityLifecycleCallbacks,
     override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
         when (event) {
             Lifecycle.Event.ON_CREATE -> doOnAction {
-                onApplicationCreated()
+                onApplicationCreated(application)
             }
 
             Lifecycle.Event.ON_START -> doOnAction {
-                onApplicationStarted()
+                onApplicationStarted(application)
             }
 
 
             Lifecycle.Event.ON_RESUME -> doOnAction {
-                onApplicationResumed()
+                onApplicationResumed(application)
             }
 
             Lifecycle.Event.ON_PAUSE ->
                 doOnAction {
-                    onApplicationPaused()
+                    onApplicationPaused(application)
                 }
 
             Lifecycle.Event.ON_STOP -> doOnAction {
-                onApplicationStopped()
+                onApplicationStopped(application)
             }
             Lifecycle.Event.ON_DESTROY -> {
             }

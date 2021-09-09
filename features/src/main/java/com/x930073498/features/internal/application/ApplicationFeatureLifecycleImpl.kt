@@ -1,7 +1,6 @@
 package com.x930073498.features.internal.application
 
-import com.x930073498.features.core.FeatureTarget
-import com.x930073498.features.core.Initializer
+import android.app.Application
 import com.x930073498.features.core.application.ApplicationFeatureLifecycle
 import com.x930073498.features.core.application.ApplicationFeatureLifecycleObserver
 import com.x930073498.features.internal.LockList
@@ -26,33 +25,33 @@ class ApplicationFeatureLifecycleImpl() :
         }
     }
 
-    override fun onApplicationCreated() {
+    override fun onApplicationCreated(application:Application) {
         forEach {
-            onApplicationCreated()
+            onApplicationCreated(application)
         }
     }
 
-    override fun onApplicationStarted() {
+    override fun onApplicationStarted(application: Application) {
         forEach {
-            onApplicationStarted()
+            onApplicationStarted(application)
         }
     }
 
-    override fun onApplicationResumed() {
+    override fun onApplicationResumed(application: Application) {
         forEach {
-            onApplicationResumed()
+            onApplicationResumed(application)
         }
     }
 
-    override fun onApplicationPaused() {
+    override fun onApplicationPaused(application: Application) {
         forEach {
-            onApplicationPaused()
+            onApplicationPaused(application)
         }
     }
 
-    override fun onApplicationStopped() {
+    override fun onApplicationStopped(application: Application) {
         forEach {
-            onApplicationStopped()
+            onApplicationStopped(application)
         }
     }
 }

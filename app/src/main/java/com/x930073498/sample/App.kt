@@ -29,7 +29,7 @@ class App : Application(),TestFeature {
                 }
                 is FeatureTarget.ApplicationTarget -> {
                     it.featureLifecycle.addObserver(object :ApplicationFeatureLifecycleObserver{
-                        override fun onApplicationResumed() {
+                        override fun onApplicationResumed(application: Application) {
                             print()
                         }
                     })

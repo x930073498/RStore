@@ -33,9 +33,9 @@ class TestFragment : Fragment(R.layout.fragment_test), StoreComponent,TestFeatur
                         data.tryEmit(++count)
                     }
                 }
-                stareAt(::countOb) {
-                    viewBinding.data.text = "data=$this"
-                }
+//                stareAt(::countOb) {
+//                    viewBinding.data.text = "data=$this"
+//                }
             }
         }
 

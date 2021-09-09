@@ -100,7 +100,9 @@ internal fun <T : IStoreProvider, V> T.registerPropertyChangedListenerImpl(
 ): Disposable {
     val heartBeat = fromStore {
         getOrCreate(propertyHeartBeatKey(property)) {
-            HeartBeat.create()
+            HeartBeat.create().apply {
+                beat()
+            }
         }
     }
     val resumeAwait = AwaitState.create(false)

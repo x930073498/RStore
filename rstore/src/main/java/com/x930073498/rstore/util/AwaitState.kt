@@ -1,11 +1,12 @@
 package com.x930073498.rstore.util
 
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlin.coroutines.coroutineContext
 
 interface AwaitState<T> {
-
-
     companion object {
         fun <T> create(defaultState: T): AwaitState<T> {
             return AwaitStateImpl(defaultState)
@@ -26,6 +27,7 @@ suspend fun <T> AwaitState<T>.awaitState(state: T) {
         this == state
     }
 }
+
 
 private class AwaitStateImpl<T>(defaultState: T) : AwaitState<T> {
     private val flow = MutableStateFlow(defaultState)

@@ -37,7 +37,7 @@ private class HeartBeatImpl : HeartBeat {
 
     private val count = AtomicLong(0)
 
-    private val flow = MutableStateFlow(count.get())
+    private val flow = MutableSharedFlow<Long>(1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     override fun beat() {
         flow.tryEmit(count.incrementAndGet())
@@ -48,7 +48,7 @@ private class HeartBeatImpl : HeartBeat {
         val handle = HeartBeatHandle {
             awaitState.setState(false)
         }
-        return flow.buffer(Channel.CONFLATED).map {
+        return flow.map {
             action(handle)
         }.first { !awaitState.state }
     }

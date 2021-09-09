@@ -37,10 +37,10 @@ class MainActivity : AppCompatActivity(), StoreComponent, TestFeature {
 
     private fun setState(binding: ActivityMainBinding) {
         with(viewModel) {
-            setFeature(::count, Feature.Anchor)
-            withProperty(::count) {
-                println("enter this line count activity=$this")
-            }
+//            setFeature(::count, Feature.Anchor)
+//            withProperty(::count) {
+//                println("enter this line count activity=$this")
+//            }
             withAnchor {
                 onInitialized {
                     val awaitState = AwaitState.create(false)
@@ -56,10 +56,10 @@ class MainActivity : AppCompatActivity(), StoreComponent, TestFeature {
                     }
 
                 }
-                stareAt(::countOb) {
+//                stareAt(::countOb) {
 //                    println("enter this line countOb=$this")
-                    binding.data.text = "data=$this"
-                }
+////                    binding.data.text = "data=$this"
+//                }
                 stareAt(::count) {
                     println("enter this line count=$this")
                 }
