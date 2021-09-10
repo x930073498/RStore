@@ -15,12 +15,3 @@ interface FeatureProvider{
 internal fun FeatureProvider(feature: Feature)=object :FeatureProvider{
     override val feature: Feature=feature
 }
-
-fun  FeatureProvider.shouldSaveState(): Boolean {
-    return feature.hasFeature(Feature.SaveState)
-}
-
-
-fun  FeatureProvider.isAnchorProperty(): Boolean {
-    return feature.hasFeature(Feature.Anchor)
-}

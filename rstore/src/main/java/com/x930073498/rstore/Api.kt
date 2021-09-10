@@ -8,7 +8,7 @@ import com.x930073498.rstore.internal.setFeatureIImpl
 import com.x930073498.rstore.internal.setPropertyValueByDelegate
 import com.x930073498.rstore.property.FeatureProvider
 import com.x930073498.rstore.property.NotifyPropertyDelegate
-import com.x930073498.rstore.property.checker.StateAsFeatureProvider
+import com.x930073498.rstore.property.feature.StateAsFeatureProvider
 import com.x930073498.rstore.property.equals.ListEquals
 import com.x930073498.rstore.property.factory.InstanceFactory
 import com.x930073498.rstore.property.factory.MutLiveDataFactory

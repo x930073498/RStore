@@ -16,6 +16,7 @@ internal class PropertyAction<T : IStoreProvider, V>(
 ) : AnchorStateEventAction<T> {
     override suspend fun T.process(data: AnchorScopeState) {
         valueFromProperty(property)
+
         if (!hasFeature(property, Feature.Anchor)) return
         with(data) {
             val shouldRun = !isInitialized || stateHolder.isPropertyChanged(property.name)

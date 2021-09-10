@@ -1,7 +1,9 @@
 package com.x930073498.rstore.property
 
 import com.x930073498.rstore.core.*
+import com.x930073498.rstore.core.Feature.Companion.hasFeature
 import com.x930073498.rstore.internal.dataSaveStateKey
+import com.x930073498.rstore.internal.getFeature
 import com.x930073498.rstore.internal.setFeatureIImpl
 import com.x930073498.rstore.property.equals.WrapEquals
 import kotlin.properties.ReadWriteProperty
@@ -37,7 +39,6 @@ internal class NotifyPropertyDelegate<T : IStoreProvider, Data, Source>(
     private fun createSource(property: KProperty<*>): Source {
         return with(provider) {
             with(environment) {
-                setFeatureIImpl(property, featureProvider.feature)
                 with(factory) {
                     createSource(getSaveState(property))
                 }
@@ -82,7 +83,7 @@ internal class NotifyPropertyDelegate<T : IStoreProvider, Data, Source>(
     private fun shouldSaveState(): Boolean {
         return with(environment) {
             with(featureProvider) {
-                shouldSaveState()
+                feature.hasFeature(Feature.SaveState)
             }
         }
     }
@@ -114,11 +115,24 @@ internal class NotifyPropertyDelegate<T : IStoreProvider, Data, Source>(
     }
 
 
+    private fun compareAndSetFeature(property: KProperty<*>) {
+        with(provider) {
+            val feature = environment.featureProvider.feature
+            val lastFeature = getFeature(property, feature)
+            if (lastFeature != feature) {
+                setFeatureIImpl(property, feature)
+            }
+        }
+
+    }
+
     override fun getValue(thisRef: T, property: KProperty<*>): Source {
+        compareAndSetFeature(property)
         return value ?: initValue(property)
     }
 
     override fun setValue(thisRef: T, property: KProperty<*>, value: Source) {
+        compareAndSetFeature(property)
         when {
             value !== this.value -> {
                 this.value = value

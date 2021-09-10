@@ -1,12 +1,9 @@
-package com.x930073498.rstore.property.checker
+package com.x930073498.rstore.property.feature
 
 import com.x930073498.rstore.core.Feature
 import com.x930073498.rstore.core.Feature.Companion.plus
-import com.x930073498.rstore.core.IStoreProvider
-import com.x930073498.rstore.property.DelegateProcess
 import com.x930073498.rstore.property.FeatureProvider
 import com.x930073498.rstore.property.lazyField
-import kotlin.reflect.KProperty
 
 internal class StateAsFeatureProvider(
     private val shouldSaveState: Boolean,
