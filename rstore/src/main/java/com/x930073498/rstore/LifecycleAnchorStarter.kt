@@ -11,7 +11,7 @@ class LifecycleAnchorStarter constructor(
     private val onCreateResume: () -> Boolean = { false }
 ) : AnchorStarter {
 
-    constructor(lifecycleOwner: LifecycleOwner, onCreateResume: Boolean) : this(lifecycleOwner,
+     constructor(lifecycleOwner: LifecycleOwner, onCreateResume: Boolean) : this(lifecycleOwner,
         { onCreateResume })
 
     override fun start(handler: AnchorScopeLifecycleHandler) {

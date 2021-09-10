@@ -120,7 +120,7 @@ fun StoreComponent.LifecycleAnchorStarter(
     lifecycleOwner: LifecycleOwner = defaultLifecycleOwner,
     onCreateResume: () -> Boolean
 ): AnchorStarter {
-    return LifecycleAnchorStarter(lifecycleOwner, onCreateResume)
+    return com.x930073498.rstore.LifecycleAnchorStarter(lifecycleOwner,onCreateResume)
 }
 
 fun StoreComponent.LifecycleAnchorStarter(
