@@ -11,13 +11,13 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlin.reflect.KProperty
 
-class StateFlowInitializer<T : IStoreProvider, Data> :
-    SourceInitializer<T, Data, MutableStateFlow<Data>> {
+class FlowInitializer<T : IStoreProvider, Data,F:Flow<Data>> :
+    SourceInitializer<T, Data,F> {
     override fun T.onInitialized(
         property: KProperty<*>,
-        process: DelegateProcess<T, Data, MutableStateFlow<Data>>,
+        process: DelegateProcess<T, Data, F>,
         data: Data?,
-        source: MutableStateFlow<Data>
+        source: F
     ) {
         launchOnIO {
             var pre = data

@@ -2,10 +2,10 @@ package com.x930073498.rstore.core
 
 import com.x930073498.rstore.anchor.InitializationAction
 import com.x930073498.rstore.anchor.PropertyAction
-import kotlinx.coroutines.CoroutineScope
 import kotlin.reflect.KProperty
-interface AnchorScope<T : IStoreProvider> {
-    fun pushAction(eventAction: AnchorStateEventAction<T>)
+
+abstract class AnchorScope<T : IStoreProvider> {
+    internal abstract fun pushAction(eventAction: AnchorStateEventAction<T,*>)
 }
 
 fun <T : IStoreProvider, V> AnchorScope<T>.stareAt(

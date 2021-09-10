@@ -14,12 +14,13 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
     private val storeProvider: T,
     private val flow: Flow<PropertyEvent>,
     private val action: AnchorScope<T>.(T) -> Unit
-) : Disposable, AnchorScope<T>, AnchorScopeLifecycleHandler {
+) : Disposable, AnchorScope<T>(), AnchorScopeLifecycleHandler {
     private var job: Job? = null
     private val resumeAwaitState = AwaitState.create(false)
-    private val holder = AnchorPropertyStateHolder()
+    private val stateHolder = AnchorPropertyStateHolder()
+    private val valueHolder = AnchorPropertyValueHolder()
     private val manager = EventActionManager<T, AnchorScopeState>(storeProvider)
-    private val state = AnchorScopeState(false, holder, resumeAwaitState)
+    private val state = AnchorScopeState(false, stateHolder, valueHolder, resumeAwaitState)
 
     override fun dispose() {
         manager.dispose()
@@ -36,7 +37,7 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
                 var count = 0L
                 flow
                     .onEach {
-                        holder.setPropertyState(it.property.name, true)
+                        stateHolder.setPropertyState(it.property.name, true)
                     }
                     .map {
                         count++
@@ -75,7 +76,7 @@ internal class AnchorScopeImpl<T : IStoreProvider>(
         resumeAwaitState.setState(false)
     }
 
-    override fun pushAction(eventAction: AnchorStateEventAction<T>) {
+    override fun pushAction(eventAction: AnchorStateEventAction<T, *>) {
         manager.pushEventAction(eventAction)
     }
 

@@ -28,14 +28,10 @@ class TestFragment : Fragment(R.layout.fragment_test), StoreComponent,TestFeatur
         val viewBinding = FragmentTestBinding.bind(view)
         viewModel.withAnchor(starter = LifecycleAnchorStarter(viewModel.count > 0)) {
             with(it) {
-                onInitialized {
-                    viewBinding.root.setOnClickListener {
-                        data.tryEmit(++count)
-                    }
+
+                stareAt(::countOb) {
+                    viewBinding.data.text = "data=$this"
                 }
-//                stareAt(::countOb) {
-//                    viewBinding.data.text = "data=$this"
-//                }
             }
         }
 

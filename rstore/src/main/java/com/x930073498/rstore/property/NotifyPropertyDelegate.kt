@@ -2,6 +2,7 @@ package com.x930073498.rstore.property
 
 import com.x930073498.rstore.core.*
 import com.x930073498.rstore.core.Feature.Companion.hasFeature
+import com.x930073498.rstore.internal.*
 import com.x930073498.rstore.internal.dataSaveStateKey
 import com.x930073498.rstore.internal.getFeature
 import com.x930073498.rstore.internal.setFeatureIImpl
@@ -37,11 +38,9 @@ internal class NotifyPropertyDelegate<T : IStoreProvider, Data, Source>(
 
 
     private fun createSource(property: KProperty<*>): Source {
-        return with(provider) {
-            with(environment) {
-                with(factory) {
-                    createSource(getSaveState(property))
-                }
+        return with(environment) {
+            with(factory) {
+                createSource(getSaveState(property))
             }
         }
     }
@@ -56,7 +55,8 @@ internal class NotifyPropertyDelegate<T : IStoreProvider, Data, Source>(
     }
 
 
-    private fun equalsPre(value: Source?): Boolean {
+    private fun equalsPre(value: Source?, property: KProperty<*>): Boolean {
+        checkOrSetEquals(property)
         return with(environment) {
             equals.equals(this@NotifyPropertyDelegate.value, value)
         }
@@ -115,32 +115,44 @@ internal class NotifyPropertyDelegate<T : IStoreProvider, Data, Source>(
     }
 
 
+    private fun checkOrSetEquals(property: KProperty<*>) {
+        with(provider) {
+            if (!hasEquals(property)) {
+                setEqualsImpl(property, environment.equals)
+            }
+        }
+    }
+
     private fun compareAndSetFeature(property: KProperty<*>) {
         with(provider) {
             val feature = environment.featureProvider.feature
-            val lastFeature = getFeature(property, feature)
+            val lastFeature = getFeature(property)
             if (lastFeature != feature) {
                 setFeatureIImpl(property, feature)
             }
         }
-
     }
 
     override fun getValue(thisRef: T, property: KProperty<*>): Source {
-        compareAndSetFeature(property)
-        return value ?: initValue(property)
+        return value ?: run {
+            compareAndSetFeature(property)
+            checkOrSetEquals(property)
+            initValue(property)
+        }
     }
 
     override fun setValue(thisRef: T, property: KProperty<*>, value: Source) {
-        compareAndSetFeature(property)
         when {
             value !== this.value -> {
+                compareAndSetFeature(property)
+                checkOrSetEquals(property)
                 this.value = value
                 val data = transform(value)
                 onInitialized(property, data, value)
                 notify(property, data, value)
             }
-            !equalsPre(value) -> {
+            !equalsPre(value, property) -> {
+                compareAndSetFeature(property)
                 this.value = value
                 val data = transform(value)
                 notify(property, data, value)

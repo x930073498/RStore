@@ -3,6 +3,7 @@ package com.x930073498.sample
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.x930073498.rstore.*
@@ -20,6 +21,7 @@ import kotlinx.coroutines.launch
 class MainActivity : AppCompatActivity(), StoreComponent, TestFeature {
     private val viewModel by savedStateViewModels<MainViewModel>()
 
+    private val listViewModel by viewModels<TestListViewModel>()
     private val adapter by lazyField {
 
         MainFragmentFragmentStateAdapter(supportFragmentManager, lifecycle)
@@ -36,11 +38,26 @@ class MainActivity : AppCompatActivity(), StoreComponent, TestFeature {
 
 
     private fun setState(binding: ActivityMainBinding) {
-        with(viewModel) {
-//            setFeature(::count, Feature.Anchor)
-//            withProperty(::count) {
-//                println("enter this line count activity=$this")
+//        with(listViewModel) {
+//            withAnchor(LifecycleAnchorStarter { goods.isNotEmpty() }) {
+//                onInitialized {
+//                    if (goods.isEmpty()) isRefresh = true
+//                }
+//                stareAt(::isRefresh) {
+//                    println("enter this line 79")
+//                    if (this) refresh()
+//                }
+//                stareAt(::goods) {
+//                    println("enter this line $this")
+//                }
 //            }
+//        }
+
+        with(viewModel) {
+            setFeature(::count, Feature.Anchor)
+            withProperty(::count) {
+                println("enter this line count activity=$this")
+            }
             withAnchor {
                 onInitialized {
                     val awaitState = AwaitState.create(false)
@@ -56,10 +73,10 @@ class MainActivity : AppCompatActivity(), StoreComponent, TestFeature {
                     }
 
                 }
-//                stareAt(::countOb) {
+                stareAt(::data) {
 //                    println("enter this line countOb=$this")
-////                    binding.data.text = "data=$this"
-//                }
+                    binding.data.text = "data=$value"
+                }
                 stareAt(::count) {
                     println("enter this line count=$this")
                 }
@@ -71,7 +88,7 @@ class MainActivity : AppCompatActivity(), StoreComponent, TestFeature {
         lifecycleScope.launch {
             with(viewModel) {
                 awaitUntil(::data) {
-                    value > 5
+                    value!! > 5
                 }
             }
             Toast.makeText(this@MainActivity, "data 数值大于5", Toast.LENGTH_SHORT).show()

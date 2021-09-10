@@ -7,7 +7,7 @@ import kotlinx.coroutines.withContext
 
 internal class InitializationAction<T : IStoreProvider>(
     private val action: suspend () -> Unit = {}
-) : AnchorStateEventAction<T> {
+) : AnchorStateEventAction<T,Unit> {
 
     override suspend fun T.process(data: AnchorScopeState) {
         if (data.isInitialized) return

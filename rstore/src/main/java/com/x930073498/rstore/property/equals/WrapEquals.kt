@@ -9,11 +9,19 @@ class WrapEquals<Source, Data>(
 ) :
     Equals<Source> {
     companion object {
-        fun <Source, Data> WrapEquals<Source, Data>.equals(source: Source?, data: Data?): Boolean {
+        fun <Source, Data> WrapEquals<Source, Data>.equalsData(
+            source: Source?,
+            data: Data?
+        ): Boolean {
             val data1 = source?.let { transfer.transform(it) }
             return dataEquals.equals(data1, data)
         }
 
+    }
+
+
+    fun transform(source: Source): Data? {
+        return transfer.transform(source)
     }
 
     override fun equals(data1: Source?, data2: Source?): Boolean {

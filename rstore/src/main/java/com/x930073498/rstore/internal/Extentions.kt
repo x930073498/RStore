@@ -46,18 +46,19 @@ internal data class PropertyEvent(
 private fun KProperty<*>.asEvent() =
     PropertyEvent(this)
 
-internal fun <T : IStoreProvider, V> T.valueFromProperty(kProperty: KProperty<V>): V? {
-    return with(kProperty) {
-        when (this) {
-            is KProperty0 -> invoke()
-            is KProperty1<*, V> -> {
-                runCatching {
+internal fun <T : IStoreProvider, V> T.valueFromProperty(kProperty: KProperty<V>): V {
+    return try {
+        with(kProperty) {
+            when (this) {
+                is KProperty0 -> invoke()
+                else -> {
                     this as KProperty1<T, V>
                     invoke(this@valueFromProperty)
-                }.getOrNull()
+                }
             }
-            else -> null
         }
+    } catch (e: Exception) {
+        throw RuntimeException("请确认该属性对象是目标对象")
     }
 }
 
@@ -66,7 +67,7 @@ internal fun <T : IStoreProvider, V> T.invokeAction(
     kProperty: KProperty<V>,
     action: V.() -> Unit
 ) {
-    valueFromProperty(kProperty)?.apply {
+    valueFromProperty(kProperty).apply {
         action()
     }
 }
@@ -308,9 +309,7 @@ internal fun IStoreProvider.getFeature(
 ): Feature {
     val key = propertyFeatureKey(property)
     return fromStore {
-        getInstance<Feature>(key) ?: defaultFeature.also {
-            put(key, it)
-        }
+        getInstance<Feature>(key) ?: defaultFeature
     }
 }
 
@@ -332,12 +331,17 @@ internal fun IStoreProvider.setEqualsImpl(property: KProperty<*>, equals: Equals
     }
 }
 
+internal fun <V> IStoreProvider.hasEquals(property: KProperty<V>): Boolean {
+    val key = propertyEqualsKey(property)
+    return fromStore {
+        contains(key)
+    }
+}
+
 internal fun <V> IStoreProvider.getEqualsImpl(property: KProperty<V>): Equals<V> {
     val key = propertyEqualsKey(property)
     return fromStore {
-        getInstance<Equals<V>>(key) ?: DefaultEquals<V>().apply {
-            put(key, this)
-        }
+        getInstance<Equals<V>>(key) ?: DefaultEquals()
     }
 }
 

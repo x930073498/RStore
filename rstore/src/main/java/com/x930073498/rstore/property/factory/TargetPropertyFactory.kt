@@ -4,23 +4,25 @@ import com.x930073498.rstore.core.Disposable
 import com.x930073498.rstore.core.IStoreProvider
 import com.x930073498.rstore.internal.valueFromProperty
 import com.x930073498.rstore.property.SourceFactory
+import com.x930073498.rstore.property.SourceTransfer
 import kotlin.reflect.KProperty
 
-internal class TargetPropertyFactory<T : IStoreProvider, Data, Source>(
+internal class TargetPropertyFactory<T : IStoreProvider, Data, Target, Source>(
     private val provider: T,
     private val targetProperty: KProperty<Data>,
-    private val transfer: Data.() -> Source
+    private val transfer: Data.() -> Target,
+    private val sourceTransfer: Target.() -> Source
 ) :
-    SourceFactory<Source, Source> {
+    SourceFactory<Target, Source> {
     override fun createSource(
-        data: Source?
+        data: Target?
     ): Source {
         fun getSource(): Source {
             return with(provider) {
-                transfer.invoke(valueFromProperty(targetProperty) as Data)
+                sourceTransfer(transfer.invoke(valueFromProperty(targetProperty)))
             }
         }
-        return data ?: getSource()
+        return getSource()
     }
 
 

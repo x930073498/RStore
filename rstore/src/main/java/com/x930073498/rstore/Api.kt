@@ -1,5 +1,6 @@
 package com.x930073498.rstore
 
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.x930073498.rstore.core.*
 import com.x930073498.rstore.internal.propertyValueByDelegate
@@ -10,19 +11,21 @@ import com.x930073498.rstore.property.FeatureProvider
 import com.x930073498.rstore.property.NotifyPropertyDelegate
 import com.x930073498.rstore.property.feature.StateAsFeatureProvider
 import com.x930073498.rstore.property.equals.ListEquals
+import com.x930073498.rstore.property.factory.*
 import com.x930073498.rstore.property.factory.InstanceFactory
 import com.x930073498.rstore.property.factory.MutLiveDataFactory
-import com.x930073498.rstore.property.factory.MutableStateFlowFactory
+import com.x930073498.rstore.property.factory.TargetFlowPropertyFactory
 import com.x930073498.rstore.property.factory.TargetPropertyFactory
 import com.x930073498.rstore.property.initializer.EmptyInitializer
-import com.x930073498.rstore.property.initializer.ObservableLiveDataInitializer
-import com.x930073498.rstore.property.initializer.StateFlowInitializer
+import com.x930073498.rstore.property.initializer.LiveDataInitializer
+import com.x930073498.rstore.property.initializer.FlowInitializer
 import com.x930073498.rstore.property.initializer.TargetPropertyInitializer
 import com.x930073498.rstore.property.notifier.StandardNotifier
 import com.x930073498.rstore.property.transfer.InstanceTransfer
 import com.x930073498.rstore.property.transfer.LiveDataTransfer
-import com.x930073498.rstore.property.transfer.MutableStateFlowTransfer
+import com.x930073498.rstore.property.transfer.StateFlowTransfer
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlin.properties.ReadOnlyProperty
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
@@ -43,12 +46,12 @@ import kotlin.reflect.KProperty1
  * @param isAnchorProperty 是否是锚属性
  * @param equals 属性相等比较器
  */
-fun <V> IStoreProviderComponent.property(
+fun <V, P : IStoreProviderComponent> P.property(
     defaultValue: V,
     shouldSaveState: Boolean = false,
     isAnchorProperty: Boolean = false,
     equals: Equals<V> = DefaultEquals()
-): ReadWriteProperty<IStoreProviderComponent, V> {
+): ReadWriteProperty<P, V> {
     return NotifyPropertyDelegate(
         this,
         InstanceFactory(defaultValue),
@@ -60,11 +63,11 @@ fun <V> IStoreProviderComponent.property(
     )
 }
 
-fun <V> IStoreProviderComponent.property(
+fun <V, P : IStoreProviderComponent> P.property(
     defaultValue: V,
     feature: Feature = Feature,
     equals: Equals<V> = DefaultEquals()
-): ReadWriteProperty<IStoreProviderComponent, V> {
+): ReadWriteProperty<P, V> {
     return NotifyPropertyDelegate(
         this,
         InstanceFactory(defaultValue),
@@ -78,22 +81,22 @@ fun <V> IStoreProviderComponent.property(
 
 /**
  * 通过目标属性方法初始化属性，并监听目标属性的变化并自动改变定义属性的值
- * @param property 目标属性（必须是使用类似方式声明的属性，不然无效）
+ * @param property 目标属性（必须是使用类似方式声明的同对象属性，不然无效）
  * @param isAnchorProperty 是否是锚属性
  *  @param equals 属性相等比较器
  * @param transform 属性转化代码块
  */
-fun <V, T> IStoreProvider.property(
+fun <V, T, P : IStoreProvider> P.property(
     property: KProperty0<V>,
     isAnchorProperty: Boolean = false,
     equals: Equals<T> = DefaultEquals(),
     transform: V.() -> T,
-): ReadOnlyProperty<IStoreProviderComponent, T> {
+): ReadOnlyProperty<P, T> {
     return NotifyPropertyDelegate(
         this,
-        TargetPropertyFactory(this, property, transform),
+        TargetPropertyFactory(this, property, transform) { this },
         InstanceTransfer(),
-        TargetPropertyInitializer(property,transform),
+        TargetPropertyInitializer(property, transform),
         StandardNotifier(),
         StateAsFeatureProvider(shouldSaveState = false, isAnchorProperty = isAnchorProperty),
         equals
@@ -115,9 +118,9 @@ fun <V, T, P : IStoreProvider> P.property(
 ): ReadOnlyProperty<P, T> {
     return NotifyPropertyDelegate(
         this,
-        TargetPropertyFactory(this, property, transform),
+        TargetPropertyFactory(this, property, transform) { this },
         InstanceTransfer(),
-        TargetPropertyInitializer(property,transform),
+        TargetPropertyInitializer(property, transform),
         StandardNotifier(),
         StateAsFeatureProvider(shouldSaveState = false, isAnchorProperty = isAnchorProperty),
         equals
@@ -131,11 +134,11 @@ fun <V, T, P : IStoreProvider> P.property(
  * @param isAnchorProperty 是否是锚属性
  * @param equals 属性相等比较器
  */
-fun <V> IStoreProvider.property(
+fun <V, P : IStoreProvider> P.property(
     defaultValue: V,
     isAnchorProperty: Boolean = false,
     equals: Equals<V> = DefaultEquals()
-): ReadWriteProperty<IStoreProvider, V> {
+): ReadWriteProperty<P, V> {
     return NotifyPropertyDelegate(
         this,
         InstanceFactory(defaultValue),
@@ -150,35 +153,105 @@ fun <V> IStoreProvider.property(
 /**
  * flow类型的属性，不建议使用
  */
-fun <V> IStoreProvider.flowProperty(
+fun <V, P : IStoreProvider> P.flowProperty(
     defaultValue: V,
     isAnchorProperty: Boolean = false,
     equals: Equals<V> = DefaultEquals()
-): ReadOnlyProperty<IStoreProvider, MutableStateFlow<V>> {
+): ReadOnlyProperty<P, MutableStateFlow<V>> {
     return NotifyPropertyDelegate(
         this,
         MutableStateFlowFactory(defaultValue),
-        MutableStateFlowTransfer(),
-        StateFlowInitializer(),
+        StateFlowTransfer(),
+        FlowInitializer(),
         StandardNotifier(),
         StateAsFeatureProvider(false, isAnchorProperty),
         equals
     )
 }
 
+fun <V, T, P : IStoreProvider> P.flowProperty(
+    property: KProperty0<V>,
+    isAnchorProperty: Boolean = false,
+    equals: Equals<T> = DefaultEquals(),
+    transform: V.() -> T,
+): ReadOnlyProperty<P, StateFlow<T>> {
+    return NotifyPropertyDelegate(
+        this,
+        TargetFlowPropertyFactory(this, property, transform),
+        StateFlowTransfer(),
+        FlowInitializer(),
+        StandardNotifier(),
+        StateAsFeatureProvider(false, isAnchorProperty),
+        equals
+    )
+}
+
+fun <V, T, P : IStoreProvider> P.flowProperty(
+    property: KProperty1<P, V>,
+    isAnchorProperty: Boolean = false,
+    equals: Equals<T> = DefaultEquals(),
+    transform: V.() -> T,
+): ReadOnlyProperty<IStoreProvider, StateFlow<T>> {
+    return NotifyPropertyDelegate(
+        this,
+        TargetFlowPropertyFactory(this, property, transform),
+        StateFlowTransfer(),
+        FlowInitializer(),
+        StandardNotifier(),
+        StateAsFeatureProvider(false, isAnchorProperty),
+        equals
+    )
+}
+
+
 /**
  * liveData类型的属性，不建议使用
  */
-fun <V> IStoreProvider.liveDataProperty(
+fun <V, P : IStoreProvider> P.liveDataProperty(
     defaultValue: V? = null,
     isAnchorProperty: Boolean = false,
     equals: Equals<V> = DefaultEquals()
-): ReadOnlyProperty<IStoreProvider, MutableLiveData<V>> {
+): ReadOnlyProperty<P, MutableLiveData<V>> {
     return NotifyPropertyDelegate(
         this,
         MutLiveDataFactory(defaultValue),
         LiveDataTransfer(),
-        ObservableLiveDataInitializer(),
+        LiveDataInitializer(),
+        StandardNotifier(),
+        StateAsFeatureProvider(false, isAnchorProperty),
+        equals
+    )
+}
+
+
+fun <V, T, P : IStoreProvider> P.liveDataProperty(
+    property: KProperty0<V>,
+    isAnchorProperty: Boolean = false,
+    equals: Equals<T> = DefaultEquals(),
+    transform: V.() -> T,
+): ReadOnlyProperty<P, LiveData<T>> {
+    return NotifyPropertyDelegate(
+        this,
+        TargetLiveDataPropertyFactory(this, property, transform),
+        LiveDataTransfer(),
+        LiveDataInitializer(),
+        StandardNotifier(),
+        StateAsFeatureProvider(false, isAnchorProperty),
+        equals
+    )
+}
+
+fun <V, T, P : IStoreProvider> P.liveDataProperty(
+    property: KProperty1<P, V>,
+    isAnchorProperty: Boolean = false,
+    equals: Equals<T> = DefaultEquals(),
+    transform: V.() -> T,
+): ReadOnlyProperty<IStoreProvider, LiveData<T>> {
+    return NotifyPropertyDelegate(
+        this,
+        TargetLiveDataPropertyFactory(this, property, transform),
+        LiveDataTransfer(),
+        LiveDataInitializer(),
         StandardNotifier(),
         StateAsFeatureProvider(false, isAnchorProperty),
         equals
@@ -195,8 +268,8 @@ fun <V> IStoreProvider.listFlowProperty(
     return NotifyPropertyDelegate(
         this,
         MutableStateFlowFactory(emptyList()),
-        MutableStateFlowTransfer(),
-        StateFlowInitializer(),
+        StateFlowTransfer(),
+        FlowInitializer(),
         StandardNotifier(),
         StateAsFeatureProvider(false, isAnchorProperty),
         ListEquals(equals)
@@ -214,7 +287,7 @@ fun <V> IStoreProvider.listLiveDataProperty(
         this,
         MutLiveDataFactory(null),
         LiveDataTransfer(),
-        ObservableLiveDataInitializer(),
+        LiveDataInitializer(),
         StandardNotifier(),
         StateAsFeatureProvider(false, isAnchorProperty),
         ListEquals(equals)
@@ -224,17 +297,17 @@ fun <V> IStoreProvider.listLiveDataProperty(
 /**
  * flow类型属性，不建议使用
  */
-fun <V> IStoreProviderComponent.flowProperty(
+fun <V,P:IStoreProviderComponent> P.flowProperty(
     defaultValue: V,
     shouldSaveState: Boolean = false,
     isAnchorProperty: Boolean = false,
     equals: Equals<V> = DefaultEquals()
-): ReadOnlyProperty<IStoreProvider, MutableStateFlow<V>> {
+): ReadOnlyProperty<P, MutableStateFlow<V>> {
     return NotifyPropertyDelegate(
         this,
         MutableStateFlowFactory(defaultValue),
-        MutableStateFlowTransfer(),
-        StateFlowInitializer(),
+        StateFlowTransfer(),
+        FlowInitializer(),
         StandardNotifier(),
         StateAsFeatureProvider(shouldSaveState, isAnchorProperty),
         equals
@@ -249,12 +322,12 @@ fun <V> IStoreProviderComponent.liveDataProperty(
     shouldSaveState: Boolean = false,
     isAnchorProperty: Boolean = false,
     equals: Equals<V> = DefaultEquals()
-): ReadOnlyProperty<IStoreProvider, MutableLiveData<V>> {
+): ReadOnlyProperty<IStoreProviderComponent, MutableLiveData<V>> {
     return NotifyPropertyDelegate(
         this,
         MutLiveDataFactory(defaultValue),
         LiveDataTransfer(),
-        ObservableLiveDataInitializer(),
+        LiveDataInitializer(),
         StandardNotifier(),
         StateAsFeatureProvider(shouldSaveState, isAnchorProperty),
         equals
@@ -268,12 +341,12 @@ fun <V> IStoreProviderComponent.listFlowProperty(
     shouldSaveState: Boolean = false,
     isAnchorProperty: Boolean = false,
     equals: Equals<V> = DefaultEquals()
-): ReadOnlyProperty<IStoreProvider, MutableStateFlow<List<V>>> {
+): ReadOnlyProperty<IStoreProviderComponent, MutableStateFlow<List<V>>> {
     return NotifyPropertyDelegate(
         this,
         MutableStateFlowFactory(emptyList()),
-        MutableStateFlowTransfer(),
-        StateFlowInitializer(),
+        StateFlowTransfer(),
+        FlowInitializer(),
         StandardNotifier(),
         StateAsFeatureProvider(shouldSaveState, isAnchorProperty),
         ListEquals(equals)
@@ -287,12 +360,12 @@ fun <V> IStoreProviderComponent.listLiveDataProperty(
     shouldSaveState: Boolean = false,
     isAnchorProperty: Boolean = false,
     equals: Equals<V> = DefaultEquals()
-): ReadOnlyProperty<IStoreProvider, MutableLiveData<List<V>>> {
+): ReadOnlyProperty<IStoreProviderComponent, MutableLiveData<List<V>>> {
     return NotifyPropertyDelegate(
         this,
         MutLiveDataFactory(null),
         LiveDataTransfer(),
-        ObservableLiveDataInitializer(),
+        LiveDataInitializer(),
         StandardNotifier(),
         StateAsFeatureProvider(shouldSaveState, isAnchorProperty),
         ListEquals(equals)
@@ -342,6 +415,6 @@ operator fun <T, V : IStoreProvider> T.setValue(
 fun IStoreProvider.setFeature(property: KProperty<*>, feature: Feature) =
     setFeatureIImpl(property, feature)
 
-fun<V> IStoreProvider.setEquals(property: KProperty<V>, equals: Equals<V>){
+fun <V> IStoreProvider.setEquals(property: KProperty<V>, equals: Equals<V>) {
     setEqualsImpl(property, equals)
 }

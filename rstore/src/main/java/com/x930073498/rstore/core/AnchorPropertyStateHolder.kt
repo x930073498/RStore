@@ -1,4 +1,4 @@
-package com.x930073498.rstore.anchor
+package com.x930073498.rstore.core
 
 import com.x930073498.rstore.core.Disposable
 import com.x930073498.rstore.util.LockProvider

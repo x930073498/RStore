@@ -7,16 +7,16 @@ import com.x930073498.rstore.property.DelegateProcess
 import com.x930073498.rstore.property.SourceInitializer
 import kotlin.reflect.KProperty
 
-class TargetPropertyInitializer<T : IStoreProvider, Data, Source>(
+class TargetPropertyInitializer<T : IStoreProvider, Data,Target, Source>(
     private val targetProperty: KProperty<Data>,
-    private val transfer: Data.() -> Source
+    private val transfer: Data.() -> Source,
 ) :
-    SourceInitializer<T, Source, Source> {
+    SourceInitializer<T, Target, Source> {
     var disposable: Disposable? = null
     override fun T.onInitialized(
         property: KProperty<*>,
-        process: DelegateProcess<T, Source, Source>,
-        data: Source?,
+        process: DelegateProcess<T, Target, Source>,
+        data: Target?,
         source: Source
     ) {
         disposable?.dispose()

@@ -5,7 +5,7 @@ import com.x930073498.rstore.core.IStoreProvider
 
 internal class EventActionManager<S : IStoreProvider, T>(private val provider: S) : Disposable {
     private var isBegan = false
-    private val actions = arrayListOf<EventAction<S, T>>()
+    private val actions = arrayListOf<EventAction<S, T,*>>()
 
 
     fun begin() {
@@ -13,7 +13,7 @@ internal class EventActionManager<S : IStoreProvider, T>(private val provider: S
     }
 
 
-    fun pushEventAction(action: EventAction<S, T>) {
+    fun pushEventAction(action: EventAction<S, T,*>) {
         if (!isBegan) return
         actions.add(action)
     }
