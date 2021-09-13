@@ -12,7 +12,9 @@ internal class InstanceFeatureInitializer<T : IFeature>(
     override fun init(target: FeatureTarget) {
         val data = target.data
         if (featureClass.isInstance(data)) {
-            action(featureClass.cast(data) as T, target)
+            val feature = featureClass.cast(data) as T
+            feature.onFeatureInitialized(target)
+            action(feature, target)
         }
     }
 }

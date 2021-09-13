@@ -88,7 +88,7 @@ class MainActivity : AppCompatActivity(), StoreComponent, TestFeature {
         lifecycleScope.launch {
             with(viewModel) {
                 awaitUntil(::data) {
-                    value!! > 5
+                    value > 5
                 }
             }
             Toast.makeText(this@MainActivity, "data 数值大于5", Toast.LENGTH_SHORT).show()

@@ -23,6 +23,7 @@ interface AwaitState<T> {
 
 
 suspend fun <T> AwaitState<T>.awaitState(state: T) {
+
     awaitState {
         this == state
     }

@@ -13,7 +13,7 @@ import com.x930073498.features.internal.LockList
 import com.x930073498.features.internal.doOnLock
 import com.x930073498.features.internal.forEach
 
-class ActivityFeatureLifecycleImpl() :
+internal class ActivityFeatureLifecycleImpl :
     ActivityFeatureLifecycle,
     ActivityFeatureLifecycleObserver,
     LockList<ActivityFeatureLifecycleObserver> by LockList.create() {

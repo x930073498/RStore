@@ -9,7 +9,6 @@ import com.x930073498.features.core.fragment.FragmentFeatureLifecycle
 import com.x930073498.features.internal.LockList
 import com.x930073498.features.internal.activity.ActivityFeatureLifecycleImpl
 import com.x930073498.features.internal.application.ApplicationFeatureLifecycleImpl
-import com.x930073498.features.internal.doOnLock
 import com.x930073498.features.internal.forEach
 import com.x930073498.features.internal.fragment.FragmentFeatureLifecycleImpl
 
@@ -35,7 +34,6 @@ sealed class FeatureTarget(open val data: Any) {
         override val featureLifecycle: FragmentFeatureLifecycle
             get() = _featureLifecycle
 
-
     }
 
     class ActivityTarget internal constructor(
@@ -48,9 +46,6 @@ sealed class FeatureTarget(open val data: Any) {
             get() = _featureLifecycle
 
 
-        override fun toString(): String {
-            return "ActivityTarget(data=$data, _featureLifecycle=$_featureLifecycle, featureLifecycle=$featureLifecycle)"
-        }
 
 
     }

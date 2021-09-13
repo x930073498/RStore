@@ -22,7 +22,7 @@ class App : Application(),TestFeature {
             when(it){
                 is FeatureTarget.ActivityTarget -> {
                     it.featureLifecycle.addObserver(object:ActivityFeatureLifecycleObserver{
-                        override fun onActivityResumed(activity: Activity) {
+                        override fun onActivityCreated(activity: Activity, savedInstanceState:Bundle?) {
                             print()
                         }
                     })

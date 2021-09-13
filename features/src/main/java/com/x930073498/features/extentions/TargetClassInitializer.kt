@@ -43,6 +43,7 @@ internal class TargetClassInitializer<T, F : IFeature>(
     private val action: TargetData<T, F>.() -> Unit
 ) : Initializer {
     override fun init(target: FeatureTarget) {
+        feature.onFeatureInitialized(target)
         val data = target.data
         if (targetClass.isInstance(data)) {
             val targetData = when (target) {
