@@ -20,9 +20,11 @@ interface LockList<T> {
 
 fun <T, R> LockList<T>.doOnLock(action: MutableList<T>.() -> R): R {
     lock.lock()
-    val result = action(list)
-    lock.unlock()
-    return result
+    return try {
+        action(list)
+    } finally {
+        lock.unlock()
+    }
 }
 
 fun <T> LockList<T>.forEach(action: T.() -> Unit) {

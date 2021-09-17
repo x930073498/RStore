@@ -10,9 +10,11 @@ class MapStore : IStore {
     private val lock = ReentrantLock()
     private fun <R> doLock(action: () -> R): R {
         lock.lock()
-        val result: R = action()
-        lock.unlock()
-        return result
+        return try {
+            action()
+        } finally {
+            lock.unlock()
+        }
     }
 
     override fun remove(key: Any) {

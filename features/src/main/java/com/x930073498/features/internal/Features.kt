@@ -16,6 +16,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.startup.AppInitializer
 import com.x930073498.features.core.FeatureTarget
 import com.x930073498.features.core.Initializer
 import com.x930073498.features.core.application.ApplicationFeatureLifecycleObserver
@@ -25,6 +26,7 @@ import java.util.concurrent.locks.ReentrantLock
 
 object Features : Application.ActivityLifecycleCallbacks,
     FragmentManager.FragmentLifecycleCallbacks(), LifecycleEventObserver {
+
     private val fragmentMap = arrayMapOf<Fragment, FeatureTarget.FragmentTarget>()
     private val activityMap = arrayMapOf<Activity, FeatureTarget.ActivityTarget>()
     private lateinit var application: Application
@@ -37,24 +39,30 @@ object Features : Application.ActivityLifecycleCallbacks,
 
     private fun <R> doOnFragment(action: () -> R): R {
         fragmentLock.lock()
-        val result = action()
-        fragmentLock.unlock()
-        return result
+        try {
+            return action()
+        } finally {
+            fragmentLock.unlock()
+        }
     }
 
 
     private fun <R> doOnActivity(action: () -> R): R {
         activityLock.lock()
-        val result = action()
-        activityLock.unlock()
-        return result
+        try {
+            return action()
+        } finally {
+            activityLock.unlock()
+        }
     }
 
     private fun <R> doOnApplication(action: () -> R): R {
         applicationLock.lock()
-        val result = action()
-        applicationLock.unlock()
-        return result
+        try {
+            return action()
+        } finally {
+            applicationLock.unlock()
+        }
     }
 
     internal fun addInitializer(initializer: Initializer) {
@@ -85,11 +93,15 @@ object Features : Application.ActivityLifecycleCallbacks,
         action: FragmentFeatureLifecycleObserver.() -> Unit
     ) {
         fragmentLock.lock()
-        val target = fragmentMap[fragment]?.featureLifecycle as? FragmentFeatureLifecycleObserver
-        if (target != null) {
-            action(target)
+        try {
+            val target =
+                fragmentMap[fragment]?.featureLifecycle as? FragmentFeatureLifecycleObserver
+            if (target != null) {
+                action(target)
+            }
+        } finally {
+            fragmentLock.unlock()
         }
-        fragmentLock.unlock()
     }
 
     private fun doOnAction(
@@ -97,22 +109,28 @@ object Features : Application.ActivityLifecycleCallbacks,
         action: ActivityFeatureLifecycleImpl.() -> Unit
     ) {
         activityLock.lock()
-        val target = activityMap[activity]?.featureLifecycle as? ActivityFeatureLifecycleImpl
-        if (target != null) {
-            action(target)
+        try {
+            val target = activityMap[activity]?.featureLifecycle as? ActivityFeatureLifecycleImpl
+            if (target != null) {
+                action(target)
+            }
+        } finally {
+            activityLock.unlock()
         }
-        activityLock.unlock()
     }
 
     private fun doOnAction(
         action: ApplicationFeatureLifecycleObserver.() -> Unit
     ) {
         applicationLock.lock()
-        val target = applicationTarget.featureLifecycle as? ApplicationFeatureLifecycleObserver
-        if (target != null) {
-            action(target)
+        try {
+            val target = applicationTarget.featureLifecycle as? ApplicationFeatureLifecycleObserver
+            if (target != null) {
+                action(target)
+            }
+        } finally {
+            applicationLock.unlock()
         }
-        applicationLock.unlock()
     }
 
 
@@ -157,15 +175,18 @@ object Features : Application.ActivityLifecycleCallbacks,
 
     internal fun setup(application: Application) {
         applicationLock.lock()
-        if (!this::application.isInitialized)
-            this.application = application
-        if (!this::applicationTarget.isInitialized)
-            applicationTarget = FeatureTarget.ApplicationTarget(application).apply {
-                setup(initializers)
-            }
-        application.registerActivityLifecycleCallbacks(this)
-        ProcessLifecycleOwner.get().lifecycle.addObserver(this)
-        applicationLock.unlock()
+        try {
+            if (!this::application.isInitialized)
+                this.application = application
+            if (!this::applicationTarget.isInitialized)
+                applicationTarget = FeatureTarget.ApplicationTarget(application).apply {
+                    setup(initializers)
+                }
+            application.registerActivityLifecycleCallbacks(this)
+            ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+        } finally {
+            applicationLock.unlock()
+        }
     }
 
     @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.Q)

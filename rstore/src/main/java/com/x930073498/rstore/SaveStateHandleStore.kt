@@ -17,9 +17,11 @@ class SaveStateHandleStore(private val handle: SavedStateHandle) : ISaveStateSto
     private val lock = ReentrantLock()
     private fun <R> doLock(block: () -> R): R {
         lock.lock()
-        val result = block()
-        lock.unlock()
-        return result
+        try {
+            return block()
+        } finally {
+            lock.unlock()
+        }
     }
 
     override fun remove(key: String) {

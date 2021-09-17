@@ -8,7 +8,9 @@ interface LockProvider {
 
 fun <T : LockProvider, R> T.doLock(action: T.() -> R): R {
     lock.lock()
-    val result = action()
-    lock.unlock()
-    return result
+    return try {
+        action(this)
+    } finally {
+        lock.unlock()
+    }
 }

@@ -11,6 +11,7 @@ import androidx.fragment.app.FragmentManager
 /**
  * 带有pre/post开头的方法需要android 10及以上的机型支持
  */
+
 interface ActivityFeatureLifecycleObserver {
     companion object : ActivityFeatureLifecycleObserver
 
