@@ -5,6 +5,8 @@ import android.app.Application
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import androidx.annotation.ChecksSdkIntAtLeast
 import androidx.annotation.RequiresApi
@@ -16,19 +18,14 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
-import androidx.startup.AppInitializer
-import com.x930073498.features.core.FeatureTarget
-import com.x930073498.features.core.Initializer
-import com.x930073498.features.core.application.ApplicationFeatureLifecycleObserver
-import com.x930073498.features.core.fragment.FragmentFeatureLifecycleObserver
-import com.x930073498.features.internal.activity.ActivityFeatureLifecycleImpl
+import com.x930073498.features.core.*
 import java.util.concurrent.locks.ReentrantLock
 
 object Features : Application.ActivityLifecycleCallbacks,
-    FragmentManager.FragmentLifecycleCallbacks(), LifecycleEventObserver {
+    FragmentManager.FragmentLifecycleCallbacks() {
 
-    private val fragmentMap = arrayMapOf<Fragment, FeatureTarget.FragmentTarget>()
-    private val activityMap = arrayMapOf<Activity, FeatureTarget.ActivityTarget>()
+    private val fragmentMap = mutableMapOf<Fragment, FeatureTarget.FragmentTarget>()
+    private val activityMap = mutableMapOf<Activity, FeatureTarget.ActivityTarget>()
     private lateinit var application: Application
     private lateinit var applicationTarget: FeatureTarget.ApplicationTarget
     private val initializers = LockList.create<Initializer>()
@@ -65,13 +62,40 @@ object Features : Application.ActivityLifecycleCallbacks,
         }
     }
 
-    internal fun addInitializer(initializer: Initializer) {
+    private val handler = Handler(Looper.getMainLooper())
+
+    internal fun addInitializer(initializer: Initializer): Removable {
+        return if (Looper.getMainLooper() == Looper.myLooper()) {
+            addInitializerInternal(initializer)
+            Removable {
+                remove(initializer)
+            }
+        } else {
+            handler.post {
+                addInitializerInternal(initializer)
+            }
+            Removable {
+                handler.post {
+                    remove(initializer)
+                }
+            }
+        }
+    }
+
+
+    internal fun remove(initializer: Initializer) {
         initializers.doOnLock {
+            remove(initializer)
+        }
+    }
+
+    private fun addInitializerInternal(initializer: Initializer) {
+        initializers.doOnLock {
+            if (contains(initializer)) return@doOnLock
             doOnApplication {
                 if (::applicationTarget.isInitialized) {
                     applicationTarget.setup(initializer)
                 }
-
             }
             doOnActivity {
                 activityMap.values.forEach {
@@ -88,60 +112,19 @@ object Features : Application.ActivityLifecycleCallbacks,
     }
 
 
-    private fun doOnAction(
-        fragment: Fragment,
-        action: FragmentFeatureLifecycleObserver.() -> Unit
-    ) {
-        fragmentLock.lock()
-        try {
-            val target =
-                fragmentMap[fragment]?.featureLifecycle as? FragmentFeatureLifecycleObserver
-            if (target != null) {
-                action(target)
-            }
-        } finally {
-            fragmentLock.unlock()
-        }
-    }
-
-    private fun doOnAction(
-        activity: Activity,
-        action: ActivityFeatureLifecycleImpl.() -> Unit
-    ) {
-        activityLock.lock()
-        try {
-            val target = activityMap[activity]?.featureLifecycle as? ActivityFeatureLifecycleImpl
-            if (target != null) {
-                action(target)
-            }
-        } finally {
-            activityLock.unlock()
-        }
-    }
-
-    private fun doOnAction(
-        action: ApplicationFeatureLifecycleObserver.() -> Unit
-    ) {
-        applicationLock.lock()
-        try {
-            val target = applicationTarget.featureLifecycle as? ApplicationFeatureLifecycleObserver
-            if (target != null) {
-                action(target)
-            }
-        } finally {
-            applicationLock.unlock()
-        }
-    }
-
-
-    private fun setup(fragment: Fragment) {
+    private fun setup(fragment: Fragment,fragmentManager: FragmentManager,context: Context) {
         doOnFragment {
             if (!fragmentMap.contains(fragment)) {
-                fragmentMap[fragment] =
-                    FeatureTarget.FragmentTarget(fragment).apply {
-                        setup(initializers)
+                FeatureTarget.requireTarget(fragment).apply {
+                    if (!hasFragmentManager()){
+                        this.fragmentManager=fragmentManager
                     }
-
+                    if (!hasContext()){
+                        this.context=context
+                    }
+                    setup(initializers)
+                    fragmentMap[fragment] = this
+                }
                 fragment.childFragmentManager.registerFragmentLifecycleCallbacks(this, false)
             }
         }
@@ -149,26 +132,33 @@ object Features : Application.ActivityLifecycleCallbacks,
 
     private fun dispose(fragment: Fragment) {
         doOnFragment {
+            fragmentMap[fragment]?.destroy()
             fragmentMap.remove(fragment)
         }
     }
 
-    private fun setup(activity: Activity) {
+    private fun setup(activity: Activity,savedInstanceState: Bundle?) {
         doOnActivity {
             if (!activityMap.contains(activity)) {
-                activityMap[activity] =
-                    FeatureTarget.ActivityTarget(activity).apply {
-                        setup(initializers)
-                    }
+                if (activity !is LifecycleOwner) {
+                    ReportFragment.injectIfNeededIn(activity)
+                }
+                FeatureTarget.requireTarget(activity).apply {
+                    this.savedInstanceState=savedInstanceState
+                    setup(initializers)
+                    activityMap[activity] = this
+                }
                 if (activity is FragmentActivity) {
                     activity.supportFragmentManager.registerFragmentLifecycleCallbacks(this, false)
                 }
+
             }
         }
     }
 
     private fun dispose(activity: Activity) {
         doOnActivity {
+            activityMap[activity]?.destroy()
             activityMap.remove(activity)
         }
     }
@@ -178,12 +168,13 @@ object Features : Application.ActivityLifecycleCallbacks,
         try {
             if (!this::application.isInitialized)
                 this.application = application
-            if (!this::applicationTarget.isInitialized)
-                applicationTarget = FeatureTarget.ApplicationTarget(application).apply {
-                    setup(initializers)
-                }
-            application.registerActivityLifecycleCallbacks(this)
-            ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+            if (!::applicationTarget.isInitialized) {
+                applicationTarget = FeatureTarget.requireTarget(application)
+                application.registerActivityLifecycleCallbacks(this)
+                applicationTarget.setup(initializers)
+            }
+
+
         } finally {
             applicationLock.unlock()
         }
@@ -196,140 +187,38 @@ object Features : Application.ActivityLifecycleCallbacks,
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onActivityPreCreated(activity: Activity, savedInstanceState: Bundle?) {
-        setup(activity)
-        doOnAction(activity) {
+        setup(activity,savedInstanceState)
+        FeatureTarget.requireTarget(activity).doOnActivityLifecycle {
             onActivityPreCreated(activity, savedInstanceState)
         }
-
     }
 
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
         if (!isAtLeastQ()) {
-            setup(activity)
-        }
-        doOnAction(activity) {
-            onActivityCreated(activity, savedInstanceState)
-        }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.Q)
-    override fun onActivityPostCreated(activity: Activity, savedInstanceState: Bundle?) {
-        doOnAction(activity) {
-            onActivityPostCreated(activity, savedInstanceState)
-        }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.Q)
-    override fun onActivityPreStarted(activity: Activity) {
-        doOnAction(activity) {
-            onActivityPreStarted(activity)
+            setup(activity,savedInstanceState)
+            FeatureTarget.requireTarget(activity).doOnActivityLifecycle {
+                onActivityCreated(activity, savedInstanceState)
+            }
         }
     }
 
     override fun onActivityStarted(activity: Activity) {
-        doOnAction(activity) {
-            onActivityStarted(activity)
-        }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.Q)
-    override fun onActivityPostStarted(activity: Activity) {
-        doOnAction(activity) {
-            onActivityPostStarted(activity)
-        }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.Q)
-    override fun onActivityPreResumed(activity: Activity) {
-        doOnAction(activity) {
-            onActivityPreResumed(activity)
-        }
     }
 
     override fun onActivityResumed(activity: Activity) {
-        doOnAction(activity) {
-            onActivityResumed(activity)
-        }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.Q)
-    override fun onActivityPostResumed(activity: Activity) {
-        doOnAction(activity) {
-            onActivityPostResumed(activity)
-        }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.Q)
-    override fun onActivityPrePaused(activity: Activity) {
-        doOnAction(activity) {
-            onActivityPrePaused(activity)
-        }
     }
 
     override fun onActivityPaused(activity: Activity) {
-        doOnAction(activity) {
-            onActivityPaused(activity)
-        }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.Q)
-    override fun onActivityPostPaused(activity: Activity) {
-        doOnAction(activity) {
-            onActivityPostPaused(activity)
-        }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.Q)
-    override fun onActivityPreStopped(activity: Activity) {
-        doOnAction(activity) {
-            onActivityPreStopped(activity)
-        }
     }
 
     override fun onActivityStopped(activity: Activity) {
-        doOnAction(activity) {
-            onActivityStopped(activity)
-        }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.Q)
-    override fun onActivityPostStopped(activity: Activity) {
-        doOnAction(activity) {
-            onActivityPostStopped(activity)
-        }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.Q)
-    override fun onActivityPreSaveInstanceState(activity: Activity, outState: Bundle) {
-        doOnAction(activity) {
-            onActivityPreSaveInstanceState(activity, outState)
-        }
     }
 
     override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {
-        doOnAction(activity) {
-            onActivitySaveInstanceState(activity, outState)
-        }
     }
 
-    @RequiresApi(Build.VERSION_CODES.Q)
-    override fun onActivityPostSaveInstanceState(activity: Activity, outState: Bundle) {
-        doOnAction(activity) {
-            onActivityPostSaveInstanceState(activity, outState)
-        }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.Q)
-    override fun onActivityPreDestroyed(activity: Activity) {
-        doOnAction(activity) {
-            onActivityPreDestroyed(activity)
-        }
-    }
 
     override fun onActivityDestroyed(activity: Activity) {
-        doOnAction(activity) {
-            onActivityDestroyed(activity)
-        }
         if (!isAtLeastQ()) {
             dispose(activity)
         }
@@ -337,138 +226,18 @@ object Features : Application.ActivityLifecycleCallbacks,
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onActivityPostDestroyed(activity: Activity) {
-        doOnAction(activity) {
-            onActivityPostDestroyed(activity)
-        }
         dispose(activity)
     }
 
     override fun onFragmentPreAttached(fm: FragmentManager, f: Fragment, context: Context) {
-        setup(f)
-        doOnAction(f) {
+        setup(f,fm,context)
+        FeatureTarget.requireTarget(f).doOnFragmentLifecycle {
             onFragmentPreAttached(fm, f, context)
         }
     }
 
-    override fun onFragmentAttached(fm: FragmentManager, f: Fragment, context: Context) {
-        doOnAction(f) {
-            onFragmentAttached(fm, f, context)
-        }
-    }
-
-    override fun onFragmentPreCreated(
-        fm: FragmentManager,
-        f: Fragment,
-        savedInstanceState: Bundle?
-    ) {
-        doOnAction(f) {
-            onFragmentPreCreated(fm, f, savedInstanceState)
-        }
-    }
-
-    override fun onFragmentCreated(fm: FragmentManager, f: Fragment, savedInstanceState: Bundle?) {
-        doOnAction(f) {
-            onFragmentCreated(fm, f, savedInstanceState)
-        }
-    }
-
-    override fun onFragmentActivityCreated(
-        fm: FragmentManager,
-        f: Fragment,
-        savedInstanceState: Bundle?
-    ) {
-        doOnAction(f) {
-            onFragmentActivityCreated(fm, f, savedInstanceState)
-        }
-    }
-
-    override fun onFragmentViewCreated(
-        fm: FragmentManager,
-        f: Fragment,
-        v: View,
-        savedInstanceState: Bundle?
-    ) {
-        doOnAction(f) {
-            onFragmentViewCreated(fm, f, v, savedInstanceState)
-        }
-    }
-
-    override fun onFragmentStarted(fm: FragmentManager, f: Fragment) {
-        doOnAction(f) {
-            onFragmentStarted(fm, f)
-        }
-    }
-
-    override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
-        doOnAction(f) {
-            onFragmentResumed(fm, f)
-        }
-    }
-
-    override fun onFragmentPaused(fm: FragmentManager, f: Fragment) {
-        doOnAction(f) {
-            onFragmentPaused(fm, f)
-        }
-    }
-
-    override fun onFragmentStopped(fm: FragmentManager, f: Fragment) {
-        doOnAction(f) {
-            onFragmentStopped(fm, f)
-        }
-    }
-
-    override fun onFragmentSaveInstanceState(fm: FragmentManager, f: Fragment, outState: Bundle) {
-        doOnAction(f) {
-            onFragmentSaveInstanceState(fm, f, outState)
-        }
-    }
-
-    override fun onFragmentViewDestroyed(fm: FragmentManager, f: Fragment) {
-        doOnAction(f) {
-            onFragmentViewDestroyed(fm, f)
-        }
-    }
-
-    override fun onFragmentDestroyed(fm: FragmentManager, f: Fragment) {
-        doOnAction(f) {
-            onFragmentDestroyed(fm, f)
-        }
-    }
-
     override fun onFragmentDetached(fm: FragmentManager, f: Fragment) {
-        doOnAction(f) {
-            onFragmentDetached(fm, f)
-        }
         dispose(f)
     }
 
-    override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
-        when (event) {
-            Lifecycle.Event.ON_CREATE -> doOnAction {
-                onApplicationCreated(application)
-            }
-
-            Lifecycle.Event.ON_START -> doOnAction {
-                onApplicationStarted(application)
-            }
-
-
-            Lifecycle.Event.ON_RESUME -> doOnAction {
-                onApplicationResumed(application)
-            }
-
-            Lifecycle.Event.ON_PAUSE ->
-                doOnAction {
-                    onApplicationPaused(application)
-                }
-
-            Lifecycle.Event.ON_STOP -> doOnAction {
-                onApplicationStopped(application)
-            }
-            Lifecycle.Event.ON_DESTROY -> {
-            }
-            Lifecycle.Event.ON_ANY -> {
-            }
-        }
-    }
 }

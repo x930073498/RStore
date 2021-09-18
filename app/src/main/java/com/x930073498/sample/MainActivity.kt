@@ -1,10 +1,14 @@
 package com.x930073498.sample
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.x930073498.rstore.*
 import com.x930073498.rstore.core.*
@@ -91,6 +95,7 @@ class MainActivity : AppCompatActivity(), StoreComponent, TestFeature {
                     value > 5
                 }
             }
+            startActivity(Intent(this@MainActivity,SecondActivity::class.java))
             Toast.makeText(this@MainActivity, "data 数值大于5", Toast.LENGTH_SHORT).show()
         }
 
@@ -99,4 +104,6 @@ class MainActivity : AppCompatActivity(), StoreComponent, TestFeature {
     override fun print() {
         println("enter this line activity=$this")
     }
+
+
 }

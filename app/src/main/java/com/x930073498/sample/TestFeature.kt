@@ -5,14 +5,16 @@ import com.x930073498.features.core.IFeature
 
 interface TestFeature : IFeature {
     override fun onFeatureInitialized(target: FeatureTarget) {
-println("enter this line 87")
+        println("enter this line 87")
     }
-    companion object:TestFeature{
+
+    companion object : TestFeature {
         override fun print() {
             println("enter this line 9999")
         }
 
     }
+
     fun print()
 
 

@@ -17,6 +17,19 @@ interface LockList<T> {
         LockList<T>
 }
 
+operator fun <T> LockList<T>.plus(list: LockList<T>): LockList<T> {
+    val result = LockList.create<T>()
+    result.doOnLock {
+        addAll(doOnLock {
+            this
+        })
+        addAll(list.doOnLock {
+            this
+        })
+    }
+    return result
+}
+
 
 fun <T, R> LockList<T>.doOnLock(action: MutableList<T>.() -> R): R {
     lock.lock()
