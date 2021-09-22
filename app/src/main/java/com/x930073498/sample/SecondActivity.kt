@@ -1,7 +1,10 @@
 package com.x930073498.sample
 
 import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
+import android.view.View
+import android.view.Window
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.x930073498.features.core.FeatureTarget
@@ -9,47 +12,50 @@ import com.x930073498.features.core.Removable
 import com.x930073498.features.installInstanceFeature
 
 class SecondActivity : Activity(), SecondTestFeature {
-    private lateinit var removable: Removable
+//    private lateinit var removable: Removable
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        removable = installInstanceFeature<SecondTestFeature> {
-            with(target) {
-                if (this is FeatureTarget.ActivityTarget) {
-                    addObserver(object : DefaultLifecycleObserver {
-                        override fun onCreate(owner: LifecycleOwner) {
-                            feature.printCreate()
-                        }
-
-                        override fun onStart(owner: LifecycleOwner) {
-                            feature.printStart()
-                        }
-
-                        override fun onResume(owner: LifecycleOwner) {
-                            feature.printResume()
-                        }
-
-                        override fun onPause(owner: LifecycleOwner) {
-                            feature.printPause()
-                        }
-
-                        override fun onStop(owner: LifecycleOwner) {
-                            feature.printStop()
-                        }
-
-                        override fun onDestroy(owner: LifecycleOwner) {
-                            feature.printDestroy()
-                        }
-                    })
-                }
-            }
+        findViewById<View>(Window.ID_ANDROID_CONTENT).setOnClickListener {
+            startActivity(Intent(this,ThirdActivity::class.java))
         }
+//        removable = installInstanceFeature<SecondTestFeature> {
+//            with(target) {
+//                if (this is FeatureTarget.ActivityTarget) {
+//                    addObserver(object : DefaultLifecycleObserver {
+//                        override fun onCreate(owner: LifecycleOwner) {
+//                            feature.printCreate()
+//                        }
+//
+//                        override fun onStart(owner: LifecycleOwner) {
+//                            feature.printStart()
+//                        }
+//
+//                        override fun onResume(owner: LifecycleOwner) {
+//                            feature.printResume()
+//                        }
+//
+//                        override fun onPause(owner: LifecycleOwner) {
+//                            feature.printPause()
+//                        }
+//
+//                        override fun onStop(owner: LifecycleOwner) {
+//                            feature.printStop()
+//                        }
+//
+//                        override fun onDestroy(owner: LifecycleOwner) {
+//                            feature.printDestroy()
+//                        }
+//                    })
+//                }
+//            }
+//        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        removable.remove()
+//        removable.remove()
     }
 
     override fun onFeatureInitialized(target: FeatureTarget) {

@@ -66,6 +66,7 @@ class MainActivity : AppCompatActivity(), StoreComponent, TestFeature {
                 onInitialized {
                     val awaitState = AwaitState.create(false)
                     binding.root.setOnClickListener {
+                        startActivity(Intent(this@MainActivity,SecondActivity::class.java))
                         awaitState.setState(!awaitState.state)
                     }
                     launchOnIO {
@@ -95,14 +96,14 @@ class MainActivity : AppCompatActivity(), StoreComponent, TestFeature {
                     value > 5
                 }
             }
-            startActivity(Intent(this@MainActivity,SecondActivity::class.java))
+
             Toast.makeText(this@MainActivity, "data 数值大于5", Toast.LENGTH_SHORT).show()
         }
 
     }
 
     override fun print() {
-        println("enter this line activity=$this")
+//        println("enter this line activity=$this")
     }
 
 

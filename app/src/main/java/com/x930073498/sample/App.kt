@@ -8,6 +8,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import com.x930073498.features.addActivityLifecycleObserver
 import com.x930073498.features.core.ActivityFeatureLifecycleObserver
 import com.x930073498.features.core.FeatureTarget
 import com.x930073498.features.core.ApplicationFeatureLifecycleObserver
@@ -23,6 +24,11 @@ class App : Application(), TestFeature {
         super.onCreate()
 
 
+        addActivityLifecycleObserver(object :ActivityFeatureLifecycleObserver{
+            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
+                println("enter this line activity=$activity")
+            }
+        })
 
         installInstanceFeature<TestFeature> {
             with(target) {

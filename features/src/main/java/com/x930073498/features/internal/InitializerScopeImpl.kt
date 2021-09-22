@@ -90,7 +90,7 @@ internal class InitializerScopeImpl(private val target: FeatureTarget) : Initial
     }
 
     override fun FeatureTarget.FragmentTarget.addObserver(observer: FragmentFeatureLifecycleObserver): Removable {
-        val callback = observer.asFragmentLifecycleCallbacks()
+        val callback = observer.asFragmentLifecycleCallbacks(this)
         fragmentManager.registerFragmentLifecycleCallbacks(callback, false)
         fragmentCallbacks.doOnLock {
             add(callback)
@@ -130,7 +130,7 @@ internal class InitializerScopeImpl(private val target: FeatureTarget) : Initial
     }
 
     override fun FeatureTarget.ActivityTarget.addObserver(observer: ActivityFeatureLifecycleObserver): Removable {
-        val callback = observer.asActivityLifecycleCallbacks()
+        val callback = observer.asActivityLifecycleCallbacks(this)
         activityCallbacks.doOnLock {
             add(callback)
         }
@@ -155,14 +155,15 @@ internal class InitializerScopeImpl(private val target: FeatureTarget) : Initial
 
     @RequiresApi(29)
     override fun FeatureTarget.ActivityTarget.addObserver(observer: ActivityFeatureStateObserver): Removable {
-        data.registerActivityLifecycleCallbacks(observer)
+      val callback=observer.asActivityLifecycleCallbacks(this)
+        data.registerActivityLifecycleCallbacks(callback)
         activityCallbacks.doOnLock {
-            add(observer)
+            add(callback)
         }
         return Removable {
-            data.unregisterActivityLifecycleCallbacks(observer)
+            data.unregisterActivityLifecycleCallbacks(callback)
             activityCallbacks.doOnLock {
-                remove(observer)
+                remove(callback)
             }
         }
     }
