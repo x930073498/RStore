@@ -6,7 +6,7 @@ object Versions {
         const val target= compile
     }
 
-    const val publish = "0.3.2"
+    const val publish = "0.3.3"
 }
 
 object Libs {
