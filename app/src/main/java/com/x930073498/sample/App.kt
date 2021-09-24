@@ -1,75 +1,38 @@
 package com.x930073498.sample
 
-import android.app.Activity
 import android.app.Application
-import android.content.Context
-import android.os.Bundle
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
-import com.x930073498.features.addActivityLifecycleObserver
-import com.x930073498.features.core.ActivityFeatureLifecycleObserver
-import com.x930073498.features.core.FeatureTarget
-import com.x930073498.features.core.ApplicationFeatureLifecycleObserver
-import com.x930073498.features.core.FragmentFeatureLifecycleObserver
-import com.x930073498.features.installInstanceFeature
-import com.x930073498.features.remove
+import com.x930073498.features.addFeatureInitializer
+import com.x930073498.features.core.*
+import com.x930073498.lifecycle.core.Removable
 
 class App : Application(), TestFeature {
-    override fun onFeatureInitialized(target: FeatureTarget) {
-        println("enter this line Application")
-    }
+
+    private var removable: Removable = Removable
     override fun onCreate() {
+        removable = addFeatureInitializer(false) {
+            addTypeInstanceHandler<TestFeature> {
+                addLifecycleObserver(object : DefaultLifecycleObserver {
+                    override fun onResume(owner: LifecycleOwner) {
+                        feature.print()
+                    }
+                })
+            }
+            addActivityWrapperFeatureHandler(SecondActivity::class.java,this@App){
+                feature.print()
+            }
+        }
         super.onCreate()
 
 
-        addActivityLifecycleObserver(object :ActivityFeatureLifecycleObserver{
-            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
-                println("enter this line activity=$activity")
-            }
-        })
-
-        installInstanceFeature<TestFeature> {
-            with(target) {
-                when (this) {
-                    is FeatureTarget.ActivityTarget -> {
-                        addObserver(object : ActivityFeatureLifecycleObserver {
-                            override fun onActivityCreated(
-                                activity: Activity,
-                                savedInstanceState: Bundle?
-                            ) {
-                                feature.print()
-                            }
-                        })
-                    }
-                    is FeatureTarget.ApplicationTarget -> {
-                        addObserver(object :DefaultLifecycleObserver{
-                            override fun onCreate(owner: LifecycleOwner) {
-
-                            }
-                        })
-                        addObserver(object : ApplicationFeatureLifecycleObserver {
-                            override fun onApplicationCreated(application: Application) {
-                                feature.print()
-                            }
-                        })
-                    }
-                    is FeatureTarget.FragmentTarget -> {
-                        addObserver(object : FragmentFeatureLifecycleObserver {
-                            override fun onFragmentPreAttached(
-                                fm: FragmentManager,
-                                f: Fragment,
-                                context: Context
-                            ) {
-                                feature.print()
-                            }
-                        })
-                    }
-                }
-            }
-        }
     }
+
+    override fun onLowMemory() {
+        super.onLowMemory()
+
+    }
+
 
     override fun print() {
         println("enter this line application=$this")

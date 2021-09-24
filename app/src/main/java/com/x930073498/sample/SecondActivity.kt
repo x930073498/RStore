@@ -1,22 +1,29 @@
 package com.x930073498.sample
 
 import android.app.Activity
+import android.app.Application
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.view.Window
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
-import com.x930073498.features.core.FeatureTarget
-import com.x930073498.features.core.Removable
-import com.x930073498.features.installInstanceFeature
+import com.x930073498.lifecycle.addInitializer
+import com.x930073498.lifecycle.castActivity
+import com.x930073498.lifecycle.core.*
 
 class SecondActivity : Activity(), SecondTestFeature {
 //    private lateinit var removable: Removable
-
+private var removable:Removable=Removable
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
         super.onCreate(savedInstanceState)
+
+
         findViewById<View>(Window.ID_ANDROID_CONTENT).setOnClickListener {
             startActivity(Intent(this,ThirdActivity::class.java))
         }
@@ -55,12 +62,10 @@ class SecondActivity : Activity(), SecondTestFeature {
 
     override fun onDestroy() {
         super.onDestroy()
-//        removable.remove()
+        removable.remove()
     }
 
-    override fun onFeatureInitialized(target: FeatureTarget) {
-        println("enter this line 14747")
-    }
+
 
     override fun printCreate() {
         println("enter this line create")

@@ -8,6 +8,6 @@ dependencyResolutionManagement {
 rootProject.name = "RStore"
 include ':app'
 include ':rstore'
-include ':features'
+include ':lifecycle'
 
 

@@ -48,6 +48,6 @@ dependencies {
     implementation(Libs.AndroidX.liveData)
     implementation(Libs.AndroidX.kotlinxCoroutines)
     implementation(project(":rstore"))
-    implementation(project(":features"))
+    implementation(project(":lifecycle"))
 
 }

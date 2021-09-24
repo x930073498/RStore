@@ -6,10 +6,7 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.*
 import com.x930073498.rstore.*
 import com.x930073498.rstore.core.*
 import com.x930073498.rstore.property.lazyField
@@ -37,7 +34,6 @@ class MainActivity : AppCompatActivity(), StoreComponent, TestFeature {
         setContentView(binding.root)
         binding.viewPager.adapter = adapter
         setState(binding)
-
     }
 
 
@@ -66,8 +62,8 @@ class MainActivity : AppCompatActivity(), StoreComponent, TestFeature {
                 onInitialized {
                     val awaitState = AwaitState.create(false)
                     binding.root.setOnClickListener {
-                        startActivity(Intent(this@MainActivity,SecondActivity::class.java))
-                        awaitState.setState(!awaitState.state)
+                        startActivity(Intent(this@MainActivity, SecondActivity::class.java))
+//                        awaitState.setState(!awaitState.state)
                     }
                     launchOnIO {
                         while (isActive) {
@@ -103,7 +99,7 @@ class MainActivity : AppCompatActivity(), StoreComponent, TestFeature {
     }
 
     override fun print() {
-//        println("enter this line activity=$this")
+        println("enter this line activity=$this")
     }
 
 
