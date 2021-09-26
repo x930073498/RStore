@@ -375,6 +375,8 @@ internal class InitializerScopeImpl : Application.ActivityLifecycleCallbacks,
             if (activity is FragmentActivity) {
                 activity.supportFragmentManager.unregisterFragmentLifecycleCallbacks(this)
             }
+            defaultActivityLifecycleCallback.onActivityEnd(activity)
+            activityLifecycleCallback.onActivityEnd(activity)
             environment.disposeRemovable(activity)
         }
     }
@@ -385,6 +387,8 @@ internal class InitializerScopeImpl : Application.ActivityLifecycleCallbacks,
                 activity.supportFragmentManager.unregisterFragmentLifecycleCallbacks(this)
             }
             activityLifecycleCallback.onActivityPostDestroyed(activity)
+            activityLifecycleCallback.onActivityEnd(activity)
+            defaultActivityLifecycleCallback.onActivityEnd(activity)
             environment.disposeRemovable(activity)
         }
     }

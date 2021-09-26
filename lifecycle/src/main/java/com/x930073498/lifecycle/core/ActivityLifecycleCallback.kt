@@ -23,6 +23,7 @@ interface DefaultActivityLifecycleCallback : LifecycleCallback {
 
     }
 
+    fun onActivityInit(activity: Activity, savedInstanceState: Bundle?) {}
     fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
 
     }
@@ -45,7 +46,7 @@ interface DefaultActivityLifecycleCallback : LifecycleCallback {
     fun onActivityDestroyed(activity: Activity) {
     }
 
-    fun onActivityInit(activity: Activity, savedInstanceState: Bundle?){}
+    fun onActivityEnd(activity: Activity){}
 
 
 }
@@ -88,6 +89,10 @@ internal class DefaultActivityLifecycleCallbackWrapper(
 
     override fun onActivityDestroyed(activity: Activity) {
         callback.onActivityDestroyed(activity)
+    }
+
+    override fun onActivityEnd(activity: Activity) {
+        callback.onActivityEnd(activity)
     }
 }
 
@@ -139,6 +144,11 @@ internal class DefaultChainActivityLifecycleCallback(
     override fun onActivityDestroyed(activity: Activity) {
         first.onActivityDestroyed(activity)
         second.onActivityDestroyed(activity)
+    }
+
+    override fun onActivityEnd(activity: Activity) {
+        first.onActivityEnd(activity)
+        second.onActivityEnd(activity)
     }
 }
 
@@ -357,6 +367,10 @@ internal class ActivityLifecycleCallbackWrapper(
             callback.onActivityPostDestroyed(activity)
         }
     }
+
+    override fun onActivityEnd(activity: Activity) {
+        callback.onActivityEnd(activity)
+    }
 }
 
 internal class ChainActivityLifecycleCallback(
@@ -503,5 +517,10 @@ internal class ChainActivityLifecycleCallback(
             first.onActivityPostDestroyed(activity)
             second.onActivityPostDestroyed(activity)
         }
+    }
+
+    override fun onActivityEnd(activity: Activity) {
+        first.onActivityEnd(activity)
+        second.onActivityEnd(activity)
     }
 }
